@@ -2,6 +2,11 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/server';
+import type { Database } from '@/types/database.types';
+
+type OrderStatus = Database['public']['Enums']['order_status'];
+type PaymentStatus = Database['public']['Enums']['payment_status'];
+type InvoiceStatus = Database['public']['Enums']['invoice_status'];
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -34,9 +39,9 @@ export async function POST(req: Request) {
         const { error } = await supabase
           .from('orders')
           .update({
-            payment_status: 'succeeded',
+            payment_status: 'succeeded' as PaymentStatus,
             paid_at: new Date().toISOString(),
-            status: 'confirmed',
+            status: 'confirmed' as OrderStatus,
           })
           .eq('stripe_payment_intent_id', paymentIntent.id);
 
@@ -52,7 +57,7 @@ export async function POST(req: Request) {
         await supabase
           .from('orders')
           .update({
-            payment_status: 'failed',
+            payment_status: 'failed' as PaymentStatus,
           })
           .eq('stripe_payment_intent_id', paymentIntent.id);
         break;
@@ -65,7 +70,7 @@ export async function POST(req: Request) {
           await supabase
             .from('customer_invoices')
             .update({
-              status: 'paid',
+              status: 'paid' as InvoiceStatus,
               amount_paid: (invoice.amount_paid || 0) / 100,
             })
             .eq('id', invoice.metadata.invoice_id);
@@ -92,12 +97,13 @@ export async function POST(req: Request) {
         const charge = event.data.object as Stripe.Charge;
         
         if (charge.payment_intent) {
+          const refundStatus: PaymentStatus = charge.amount_refunded === charge.amount 
+            ? 'refunded' 
+            : 'partially_refunded';
           await supabase
             .from('orders')
             .update({
-              payment_status: charge.amount_refunded === charge.amount 
-                ? 'refunded' 
-                : 'partially_refunded',
+              payment_status: refundStatus,
             })
             .eq('stripe_payment_intent_id', charge.payment_intent as string);
         }

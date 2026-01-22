@@ -6,8 +6,7 @@ import type { Database } from '@/types/database.types';
 type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 type OrderItemInsert = Database['public']['Tables']['order_items']['Insert'];
-type UserRow = Database['public']['Tables']['users']['Row'];
-type ProductRow = Database['public']['Tables']['products']['Row'];
+type OrderStatus = Database['public']['Enums']['order_status'];
 
 const createOrderSchema = z.object({
   customer_id: z.string().uuid(),
@@ -72,7 +71,7 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (status) {
-    query = query.eq('status', status);
+    query = query.eq('status', status as OrderStatus);
   }
   if (market_id) {
     query = query.eq('market_id', market_id);
