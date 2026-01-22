@@ -139,7 +139,7 @@ FROM orders o
 JOIN markets m ON o.market_id = m.id
 GROUP BY o.company_id, o.market_id, DATE(o.created_at AT TIME ZONE m.timezone), m.timezone;
 
-CREATE UNIQUE INDEX IF NOT EXISTS ON mv_daily_order_metrics (company_id, market_id, date);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_daily_order_metrics_pk ON mv_daily_order_metrics (company_id, market_id, date);
 
 -- Photographer performance metrics
 DROP MATERIALIZED VIEW IF EXISTS mv_photographer_performance;
@@ -171,7 +171,7 @@ LEFT JOIN media_assets ma ON a.id = ma.appointment_id
 LEFT JOIN qc_results qr ON ma.id = qr.media_asset_id
 GROUP BY p.company_id, p.id, p.user_id;
 
-CREATE UNIQUE INDEX IF NOT EXISTS ON mv_photographer_performance (company_id, photographer_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_photographer_performance_pk ON mv_photographer_performance (company_id, photographer_id);
 
 -- Customer lifetime value
 DROP MATERIALIZED VIEW IF EXISTS mv_customer_ltv;
@@ -193,7 +193,7 @@ FROM customers c
 LEFT JOIN orders o ON c.id = o.customer_id AND o.status NOT IN ('cancelled', 'draft')
 GROUP BY c.company_id, c.id;
 
-CREATE UNIQUE INDEX IF NOT EXISTS ON mv_customer_ltv (company_id, customer_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_customer_ltv_pk ON mv_customer_ltv (company_id, customer_id);
 
 -- Product performance
 DROP MATERIALIZED VIEW IF EXISTS mv_product_performance;
@@ -216,7 +216,7 @@ LEFT JOIN order_items oi ON p.id = oi.product_id
 LEFT JOIN orders o ON oi.order_id = o.id AND o.status NOT IN ('cancelled', 'draft')
 GROUP BY p.company_id, p.id, p.name, p.category_id;
 
-CREATE UNIQUE INDEX IF NOT EXISTS ON mv_product_performance (company_id, product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_product_performance_pk ON mv_product_performance (company_id, product_id);
 
 -- QC trends
 DROP MATERIALIZED VIEW IF EXISTS mv_qc_trends;
@@ -265,7 +265,7 @@ SELECT
 FROM job_stats js
 LEFT JOIN issue_stats iss ON js.company_id = iss.company_id AND js.week = iss.week;
 
-CREATE UNIQUE INDEX IF NOT EXISTS ON mv_qc_trends (company_id, week);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_qc_trends_pk ON mv_qc_trends (company_id, week);
 
 -- Sales rep performance
 DROP MATERIALIZED VIEW IF EXISTS mv_sales_performance;
@@ -289,7 +289,7 @@ WHERE o.status NOT IN ('cancelled', 'draft')
   AND o.sales_rep_id IS NOT NULL
 GROUP BY o.company_id, o.sales_rep_id, u.display_name, DATE_TRUNC('month', o.created_at);
 
-CREATE UNIQUE INDEX IF NOT EXISTS ON mv_sales_performance (company_id, sales_rep_id, month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_sales_performance_pk ON mv_sales_performance (company_id, sales_rep_id, month);
 
 -- =====================================================
 -- REFRESH FUNCTIONS
