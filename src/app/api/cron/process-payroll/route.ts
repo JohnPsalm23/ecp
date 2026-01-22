@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 
 /**
  * Process Payroll Cron Job
@@ -11,6 +11,12 @@ import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
  * 2. Generates photographer invoices
  * 3. Prepares data for QuickBooks sync
  */
+
+interface Photographer {
+  id: string;
+  company_id: string;
+  user_id: string;
+}
 
 export async function GET(request: Request) {
   // Verify cron secret
@@ -53,9 +59,13 @@ export async function GET(request: Request) {
       throw photoError;
     }
 
-    const results = [];
+    const results: Array<{
+      photographer_id: string;
+      success: boolean;
+      result: unknown;
+    }> = [];
 
-    for (const photographer of photographers || []) {
+    for (const photographer of (photographers as Photographer[]) || []) {
       // Call the generate-invoice Edge Function
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-invoice`,
