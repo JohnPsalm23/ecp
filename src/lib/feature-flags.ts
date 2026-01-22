@@ -8,8 +8,6 @@
  * - Environment-based flags
  */
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-
 interface FeatureFlag {
   name: string;
   enabled: boolean;

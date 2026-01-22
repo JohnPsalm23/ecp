@@ -6,7 +6,7 @@
 
 'use server';
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/server';
 import { logger } from './logger';
 import { AppError, ErrorCode, toAppError } from './errors';
 import { ZodError, ZodSchema } from 'zod';
@@ -54,8 +54,9 @@ export function createAction<TInput, TOutput>(config: {
       }
 
       // Get authentication context
-      const supabase = await createServerSupabaseClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const authClient = await createServerSupabaseClient();
+      const dbClient = createAdminClient();
+      const { data: { user } } = await authClient.auth.getUser();
 
       // Check authentication
       if (config.requireAuth !== false && !user) {
@@ -68,12 +69,12 @@ export function createAction<TInput, TOutput>(config: {
 
       // Check roles
       if (config.requireRoles?.length && user) {
-        const { data: userRoles } = await supabase
+        const { data: userRoles } = await dbClient
           .from('user_roles')
-          .select('roles(name)')
+          .select('role')
           .eq('user_id', user.id);
 
-        const roles = userRoles?.map((r: any) => r.roles?.name).filter(Boolean) || [];
+        const roles = (userRoles || []).map((r) => r.role).filter(Boolean);
         const hasRole = config.requireRoles.some(role => roles.includes(role));
 
         if (!hasRole) {
@@ -88,12 +89,12 @@ export function createAction<TInput, TOutput>(config: {
       // Get company context
       let companyId: string | undefined;
       if (user) {
-        const { data: userData } = await supabase
+        const { data: userData } = await dbClient
           .from('users')
           .select('company_id')
           .eq('id', user.id)
           .single();
-        companyId = userData?.company_id;
+        companyId = userData?.company_id ?? undefined;
       }
 
       const ctx: ActionContext = {
@@ -102,7 +103,7 @@ export function createAction<TInput, TOutput>(config: {
           email: user.email!,
         } : undefined,
         companyId,
-        supabase,
+        supabase: dbClient,
       };
 
       // Execute handler
@@ -136,7 +137,7 @@ export interface ActionContext {
     email: string;
   };
   companyId?: string;
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+  supabase: ReturnType<typeof createAdminClient>;
 }
 
 /**

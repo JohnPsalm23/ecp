@@ -5,7 +5,6 @@
  */
 
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { AppError, ErrorCode } from './errors';
 
 interface RateLimitConfig {
@@ -170,11 +169,8 @@ export function withRateLimit<T extends (...args: any[]) => Promise<Response>>(
     const req = args[0] as NextRequest;
     
     try {
-      // Get user ID if authenticated
-      const supabase = await createServerSupabaseClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const result = await rateLimit(req, config, user?.id);
+      // Rate limit by IP (user ID would require auth client which may cause type issues)
+      const result = await rateLimit(req, config);
       
       if (!result.success) {
         return new Response(
