@@ -19,24 +19,26 @@ export async function GET(request: Request) {
   const supabase = await createAdminClient();
 
   try {
-    // Get all active companies
+    // Get all companies
     const { data: companies, error: companiesError } = await supabase
       .from('companies')
-      .select('id, name')
-      .eq('is_active', true);
+      .select('id, name, is_active');
 
     if (companiesError) {
       throw companiesError;
     }
 
+    // Filter active companies
+    const activeCompanies = (companies || []).filter(c => c.is_active === true);
+
     const results: Array<{
       company_id: string;
-      company_name: string | null;
+      company_name: string;
       success: boolean;
       result: unknown;
     }> = [];
 
-    for (const company of companies || []) {
+    for (const company of activeCompanies) {
       // Call the Edge Function for each company
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/daily-schedule-optimizer`,

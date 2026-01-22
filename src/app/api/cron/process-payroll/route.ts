@@ -46,15 +46,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get all active photographers
+    // Get all photographers
     const { data: photographers, error: photoError } = await supabase
       .from('photographers')
-      .select('id, company_id, user_id')
-      .eq('is_active', true);
+      .select('id, company_id, user_id, is_active');
 
     if (photoError) {
       throw photoError;
     }
+
+    // Filter active photographers
+    const activePhotographers = (photographers || []).filter(p => p.is_active === true);
 
     const results: Array<{
       photographer_id: string;
@@ -62,7 +64,7 @@ export async function GET(request: Request) {
       result: unknown;
     }> = [];
 
-    for (const photographer of photographers || []) {
+    for (const photographer of activePhotographers) {
       // Call the generate-invoice Edge Function
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-invoice`,
