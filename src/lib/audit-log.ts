@@ -103,36 +103,32 @@ export async function audit(entry: AuditLogEntry): Promise<void> {
     const supabase = createAdminClient();
     
     // Mask sensitive data before logging
-    const sanitizedEntry = {
-      ...entry,
-      changes: entry.changes ? {
-        before: entry.changes.before ? maskSensitiveData(entry.changes.before) : undefined,
-        after: entry.changes.after ? maskSensitiveData(entry.changes.after) : undefined,
-      } : undefined,
-      metadata: entry.metadata ? maskSensitiveData(entry.metadata) : undefined,
-    };
+    const sanitizedChanges = entry.changes ? {
+      before: entry.changes.before ? maskSensitiveData(entry.changes.before) : undefined,
+      after: entry.changes.after ? maskSensitiveData(entry.changes.after) : undefined,
+    } : undefined;
+    const sanitizedMetadata = entry.metadata ? maskSensitiveData(entry.metadata) : undefined;
 
+    // Map interface fields to database columns
     const { error } = await supabase.from('audit_logs').insert({
-      action: sanitizedEntry.action,
-      actor_id: sanitizedEntry.actor_id,
-      actor_type: sanitizedEntry.actor_type,
-      resource_type: sanitizedEntry.resource_type,
-      resource_id: sanitizedEntry.resource_id,
-      company_id: sanitizedEntry.company_id,
-      changes: sanitizedEntry.changes,
-      metadata: sanitizedEntry.metadata,
-      ip_address: sanitizedEntry.ip_address,
-      user_agent: sanitizedEntry.user_agent,
-      request_id: sanitizedEntry.request_id,
-      created_at: new Date().toISOString(),
+      action: entry.action,
+      actor_type: entry.actor_type,
+      user_id: entry.actor_id,                    // actor_id -> user_id
+      entity_type: entry.resource_type,           // resource_type -> entity_type
+      entity_id: entry.resource_id,               // resource_id -> entity_id
+      company_id: entry.company_id,
+      changes: sanitizedChanges as Record<string, unknown> | null,
+      metadata: sanitizedMetadata as Record<string, unknown> | null,
+      user_agent: entry.user_agent,
+      request_id: entry.request_id,
     });
 
     if (error) {
       // Don't throw - audit logging should not break main operations
       logger.error('Failed to write audit log', new Error(error.message), {
         action: entry.action,
-        resource_type: entry.resource_type,
-        resource_id: entry.resource_id,
+        entity_type: entry.resource_type,
+        entity_id: entry.resource_id,
       });
     }
   } catch (error) {
@@ -276,15 +272,15 @@ export const auditLog = {
  */
 export async function queryAuditLogs(filters: {
   companyId?: string;
-  actorId?: string;
+  userId?: string;
   action?: AuditAction;
-  resourceType?: string;
-  resourceId?: string;
+  entityType?: string;
+  entityId?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
   offset?: number;
-}): Promise<any[]> {
+}): Promise<unknown[]> {
   const supabase = createAdminClient();
   
   let query = supabase
@@ -295,17 +291,17 @@ export async function queryAuditLogs(filters: {
   if (filters.companyId) {
     query = query.eq('company_id', filters.companyId);
   }
-  if (filters.actorId) {
-    query = query.eq('actor_id', filters.actorId);
+  if (filters.userId) {
+    query = query.eq('user_id', filters.userId);
   }
   if (filters.action) {
     query = query.eq('action', filters.action);
   }
-  if (filters.resourceType) {
-    query = query.eq('resource_type', filters.resourceType);
+  if (filters.entityType) {
+    query = query.eq('entity_type', filters.entityType);
   }
-  if (filters.resourceId) {
-    query = query.eq('resource_id', filters.resourceId);
+  if (filters.entityId) {
+    query = query.eq('entity_id', filters.entityId);
   }
   if (filters.startDate) {
     query = query.gte('created_at', filters.startDate);
