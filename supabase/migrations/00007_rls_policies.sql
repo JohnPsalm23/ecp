@@ -156,18 +156,22 @@ $$ LANGUAGE SQL SECURITY DEFINER STABLE;
 -- =====================================================
 
 -- Companies: Only super_admin can see all, others see their own
+DROP POLICY IF EXISTS companies_select ON companies;
 CREATE POLICY companies_select ON companies FOR SELECT
   USING (
     is_super_admin() OR 
     id = get_user_company_id()
   );
 
+DROP POLICY IF EXISTS companies_insert ON companies;
 CREATE POLICY companies_insert ON companies FOR INSERT
   WITH CHECK (is_super_admin());
 
+DROP POLICY IF EXISTS companies_update ON companies;
 CREATE POLICY companies_update ON companies FOR UPDATE
   USING (is_super_admin() OR (is_company_admin() AND id = get_user_company_id()));
 
+DROP POLICY IF EXISTS companies_delete ON companies;
 CREATE POLICY companies_delete ON companies FOR DELETE
   USING (is_super_admin());
 
@@ -175,15 +179,19 @@ CREATE POLICY companies_delete ON companies FOR DELETE
 -- MARKET POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS markets_select ON markets;
 CREATE POLICY markets_select ON markets FOR SELECT
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS markets_insert ON markets;
 CREATE POLICY markets_insert ON markets FOR INSERT
   WITH CHECK (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS markets_update ON markets;
 CREATE POLICY markets_update ON markets FOR UPDATE
   USING (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS markets_delete ON markets;
 CREATE POLICY markets_delete ON markets FOR DELETE
   USING (is_super_admin());
 
@@ -191,6 +199,7 @@ CREATE POLICY markets_delete ON markets FOR DELETE
 -- USER POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS users_select ON users;
 CREATE POLICY users_select ON users FOR SELECT
   USING (
     id = auth.uid() OR
@@ -198,9 +207,11 @@ CREATE POLICY users_select ON users FOR SELECT
     (company_id = get_user_company_id() AND (is_company_admin() OR has_role('market_manager')))
   );
 
+DROP POLICY IF EXISTS users_insert ON users;
 CREATE POLICY users_insert ON users FOR INSERT
   WITH CHECK (id = auth.uid() OR is_super_admin());
 
+DROP POLICY IF EXISTS users_update ON users;
 CREATE POLICY users_update ON users FOR UPDATE
   USING (
     id = auth.uid() OR 
@@ -208,6 +219,7 @@ CREATE POLICY users_update ON users FOR UPDATE
     (is_company_admin() AND company_id = get_user_company_id())
   );
 
+DROP POLICY IF EXISTS users_delete ON users;
 CREATE POLICY users_delete ON users FOR DELETE
   USING (is_super_admin());
 
@@ -215,6 +227,7 @@ CREATE POLICY users_delete ON users FOR DELETE
 -- USER ROLES POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS user_roles_select ON user_roles;
 CREATE POLICY user_roles_select ON user_roles FOR SELECT
   USING (
     user_id = auth.uid() OR
@@ -222,12 +235,15 @@ CREATE POLICY user_roles_select ON user_roles FOR SELECT
     (is_company_admin() AND company_id = get_user_company_id())
   );
 
+DROP POLICY IF EXISTS user_roles_insert ON user_roles;
 CREATE POLICY user_roles_insert ON user_roles FOR INSERT
   WITH CHECK (is_super_admin() OR (is_company_admin() AND company_id = get_user_company_id()));
 
+DROP POLICY IF EXISTS user_roles_update ON user_roles;
 CREATE POLICY user_roles_update ON user_roles FOR UPDATE
   USING (is_super_admin() OR (is_company_admin() AND company_id = get_user_company_id()));
 
+DROP POLICY IF EXISTS user_roles_delete ON user_roles;
 CREATE POLICY user_roles_delete ON user_roles FOR DELETE
   USING (is_super_admin() OR (is_company_admin() AND company_id = get_user_company_id()));
 
@@ -235,21 +251,25 @@ CREATE POLICY user_roles_delete ON user_roles FOR DELETE
 -- CUSTOMER POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS customers_select ON customers;
 CREATE POLICY customers_select ON customers FOR SELECT
   USING (
     user_id = auth.uid() OR
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS customers_insert ON customers;
 CREATE POLICY customers_insert ON customers FOR INSERT
   WITH CHECK (has_company_access(company_id));
 
+DROP POLICY IF EXISTS customers_update ON customers;
 CREATE POLICY customers_update ON customers FOR UPDATE
   USING (
     user_id = auth.uid() OR
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS customers_delete ON customers;
 CREATE POLICY customers_delete ON customers FOR DELETE
   USING (is_company_admin() AND has_company_access(company_id));
 
@@ -257,21 +277,25 @@ CREATE POLICY customers_delete ON customers FOR DELETE
 -- PHOTOGRAPHER POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS photographers_select ON photographers;
 CREATE POLICY photographers_select ON photographers FOR SELECT
   USING (
     user_id = auth.uid() OR
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS photographers_insert ON photographers;
 CREATE POLICY photographers_insert ON photographers FOR INSERT
   WITH CHECK (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS photographers_update ON photographers;
 CREATE POLICY photographers_update ON photographers FOR UPDATE
   USING (
     user_id = auth.uid() OR
     (is_company_admin() AND has_company_access(company_id))
   );
 
+DROP POLICY IF EXISTS photographers_delete ON photographers;
 CREATE POLICY photographers_delete ON photographers FOR DELETE
   USING (is_super_admin());
 
@@ -279,28 +303,36 @@ CREATE POLICY photographers_delete ON photographers FOR DELETE
 -- PRODUCT POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS products_select ON products;
 CREATE POLICY products_select ON products FOR SELECT
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS products_insert ON products;
 CREATE POLICY products_insert ON products FOR INSERT
   WITH CHECK (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS products_update ON products;
 CREATE POLICY products_update ON products FOR UPDATE
   USING (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS products_delete ON products;
 CREATE POLICY products_delete ON products FOR DELETE
   USING (is_company_admin() AND has_company_access(company_id));
 
 -- Apply same pattern to product_categories, product_bundles, bundle_items
+DROP POLICY IF EXISTS product_categories_select ON product_categories;
 CREATE POLICY product_categories_select ON product_categories FOR SELECT
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS product_categories_modify ON product_categories;
 CREATE POLICY product_categories_modify ON product_categories FOR ALL
   USING (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS product_bundles_select ON product_bundles;
 CREATE POLICY product_bundles_select ON product_bundles FOR SELECT
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS product_bundles_modify ON product_bundles;
 CREATE POLICY product_bundles_modify ON product_bundles FOR ALL
   USING (is_company_admin() AND has_company_access(company_id));
 
@@ -308,6 +340,7 @@ CREATE POLICY product_bundles_modify ON product_bundles FOR ALL
 -- ORDER POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS orders_select ON orders;
 CREATE POLICY orders_select ON orders FOR SELECT
   USING (
     -- Customer can see their own orders
@@ -322,15 +355,18 @@ CREATE POLICY orders_select ON orders FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS orders_insert ON orders;
 CREATE POLICY orders_insert ON orders FOR INSERT
   WITH CHECK (
     has_company_access(company_id) OR
     EXISTS (SELECT 1 FROM customers c WHERE c.id = customer_id AND c.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS orders_update ON orders;
 CREATE POLICY orders_update ON orders FOR UPDATE
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS orders_delete ON orders;
 CREATE POLICY orders_delete ON orders FOR DELETE
   USING (is_company_admin() AND has_company_access(company_id));
 
@@ -338,6 +374,7 @@ CREATE POLICY orders_delete ON orders FOR DELETE
 -- APPOINTMENT POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS appointments_select ON appointments;
 CREATE POLICY appointments_select ON appointments FOR SELECT
   USING (
     -- Photographer can see their appointments
@@ -346,9 +383,11 @@ CREATE POLICY appointments_select ON appointments FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS appointments_insert ON appointments;
 CREATE POLICY appointments_insert ON appointments FOR INSERT
   WITH CHECK (has_company_access(company_id));
 
+DROP POLICY IF EXISTS appointments_update ON appointments;
 CREATE POLICY appointments_update ON appointments FOR UPDATE
   USING (
     -- Photographer can update their own (limited fields handled in app)
@@ -356,6 +395,7 @@ CREATE POLICY appointments_update ON appointments FOR UPDATE
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS appointments_delete ON appointments;
 CREATE POLICY appointments_delete ON appointments FOR DELETE
   USING (is_company_admin() AND has_company_access(company_id));
 
@@ -363,6 +403,7 @@ CREATE POLICY appointments_delete ON appointments FOR DELETE
 -- MEDIA ASSET POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS media_assets_select ON media_assets;
 CREATE POLICY media_assets_select ON media_assets FOR SELECT
   USING (
     -- Customer can see their order's assets
@@ -377,6 +418,7 @@ CREATE POLICY media_assets_select ON media_assets FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS media_assets_insert ON media_assets;
 CREATE POLICY media_assets_insert ON media_assets FOR INSERT
   WITH CHECK (
     -- Photographer can upload
@@ -384,9 +426,11 @@ CREATE POLICY media_assets_insert ON media_assets FOR INSERT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS media_assets_update ON media_assets;
 CREATE POLICY media_assets_update ON media_assets FOR UPDATE
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS media_assets_delete ON media_assets;
 CREATE POLICY media_assets_delete ON media_assets FOR DELETE
   USING (has_company_access(company_id));
 
@@ -394,20 +438,25 @@ CREATE POLICY media_assets_delete ON media_assets FOR DELETE
 -- QC POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS qc_jobs_select ON qc_jobs;
 CREATE POLICY qc_jobs_select ON qc_jobs FOR SELECT
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS qc_jobs_insert ON qc_jobs;
 CREATE POLICY qc_jobs_insert ON qc_jobs FOR INSERT
   WITH CHECK (has_company_access(company_id));
 
+DROP POLICY IF EXISTS qc_jobs_update ON qc_jobs;
 CREATE POLICY qc_jobs_update ON qc_jobs FOR UPDATE
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS qc_results_select ON qc_results;
 CREATE POLICY qc_results_select ON qc_results FOR SELECT
   USING (
     EXISTS (SELECT 1 FROM qc_jobs qj WHERE qj.id = qc_job_id AND has_company_access(qj.company_id))
   );
 
+DROP POLICY IF EXISTS qc_issues_select ON qc_issues;
 CREATE POLICY qc_issues_select ON qc_issues FOR SELECT
   USING (
     EXISTS (
@@ -422,6 +471,7 @@ CREATE POLICY qc_issues_select ON qc_issues FOR SELECT
 -- =====================================================
 
 -- Customer invoices
+DROP POLICY IF EXISTS customer_invoices_select ON customer_invoices;
 CREATE POLICY customer_invoices_select ON customer_invoices FOR SELECT
   USING (
     -- Customer can see their invoices
@@ -429,13 +479,16 @@ CREATE POLICY customer_invoices_select ON customer_invoices FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS customer_invoices_insert ON customer_invoices;
 CREATE POLICY customer_invoices_insert ON customer_invoices FOR INSERT
   WITH CHECK (has_company_access(company_id));
 
+DROP POLICY IF EXISTS customer_invoices_update ON customer_invoices;
 CREATE POLICY customer_invoices_update ON customer_invoices FOR UPDATE
   USING (has_company_access(company_id));
 
 -- Photographer invoices
+DROP POLICY IF EXISTS photographer_invoices_select ON photographer_invoices;
 CREATE POLICY photographer_invoices_select ON photographer_invoices FOR SELECT
   USING (
     -- Photographer can see their invoices
@@ -443,13 +496,16 @@ CREATE POLICY photographer_invoices_select ON photographer_invoices FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS photographer_invoices_insert ON photographer_invoices;
 CREATE POLICY photographer_invoices_insert ON photographer_invoices FOR INSERT
   WITH CHECK (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS photographer_invoices_update ON photographer_invoices;
 CREATE POLICY photographer_invoices_update ON photographer_invoices FOR UPDATE
   USING (is_company_admin() AND has_company_access(company_id));
 
 -- Mileage logs
+DROP POLICY IF EXISTS mileage_logs_select ON mileage_logs;
 CREATE POLICY mileage_logs_select ON mileage_logs FOR SELECT
   USING (
     -- Photographer can see their logs
@@ -457,6 +513,7 @@ CREATE POLICY mileage_logs_select ON mileage_logs FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS mileage_logs_insert ON mileage_logs;
 CREATE POLICY mileage_logs_insert ON mileage_logs FOR INSERT
   WITH CHECK (
     -- Photographer can create their own logs
@@ -464,6 +521,7 @@ CREATE POLICY mileage_logs_insert ON mileage_logs FOR INSERT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS mileage_logs_update ON mileage_logs;
 CREATE POLICY mileage_logs_update ON mileage_logs FOR UPDATE
   USING (has_company_access(company_id));
 
@@ -471,6 +529,7 @@ CREATE POLICY mileage_logs_update ON mileage_logs FOR UPDATE
 -- MESSAGING POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS messages_select ON messages;
 CREATE POLICY messages_select ON messages FOR SELECT
   USING (
     sender_id = auth.uid() OR
@@ -479,6 +538,7 @@ CREATE POLICY messages_select ON messages FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS messages_insert ON messages;
 CREATE POLICY messages_insert ON messages FOR INSERT
   WITH CHECK (
     sender_id = auth.uid() OR
@@ -489,6 +549,7 @@ CREATE POLICY messages_insert ON messages FOR INSERT
 -- NOTES & TASKS POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS notes_select ON notes;
 CREATE POLICY notes_select ON notes FOR SELECT
   USING (
     (NOT is_private) OR
@@ -496,18 +557,22 @@ CREATE POLICY notes_select ON notes FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS notes_insert ON notes;
 CREATE POLICY notes_insert ON notes FOR INSERT
   WITH CHECK (
     created_by = auth.uid() AND
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS notes_update ON notes;
 CREATE POLICY notes_update ON notes FOR UPDATE
   USING (created_by = auth.uid() OR is_company_admin());
 
+DROP POLICY IF EXISTS notes_delete ON notes;
 CREATE POLICY notes_delete ON notes FOR DELETE
   USING (created_by = auth.uid() OR is_company_admin());
 
+DROP POLICY IF EXISTS tasks_select ON tasks;
 CREATE POLICY tasks_select ON tasks FOR SELECT
   USING (
     assigned_to = auth.uid() OR
@@ -515,9 +580,11 @@ CREATE POLICY tasks_select ON tasks FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS tasks_insert ON tasks;
 CREATE POLICY tasks_insert ON tasks FOR INSERT
   WITH CHECK (has_company_access(company_id));
 
+DROP POLICY IF EXISTS tasks_update ON tasks;
 CREATE POLICY tasks_update ON tasks FOR UPDATE
   USING (
     assigned_to = auth.uid() OR
@@ -528,12 +595,15 @@ CREATE POLICY tasks_update ON tasks FOR UPDATE
 -- EQUIPMENT POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS equipment_select ON equipment;
 CREATE POLICY equipment_select ON equipment FOR SELECT
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS equipment_insert ON equipment;
 CREATE POLICY equipment_insert ON equipment FOR INSERT
   WITH CHECK (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS equipment_update ON equipment;
 CREATE POLICY equipment_update ON equipment FOR UPDATE
   USING (is_company_admin() AND has_company_access(company_id));
 
@@ -541,24 +611,28 @@ CREATE POLICY equipment_update ON equipment FOR UPDATE
 -- AVAILABILITY POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS availability_blocks_select ON availability_blocks;
 CREATE POLICY availability_blocks_select ON availability_blocks FOR SELECT
   USING (
     user_id = auth.uid() OR
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS availability_blocks_insert ON availability_blocks;
 CREATE POLICY availability_blocks_insert ON availability_blocks FOR INSERT
   WITH CHECK (
     user_id = auth.uid() OR
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS availability_blocks_update ON availability_blocks;
 CREATE POLICY availability_blocks_update ON availability_blocks FOR UPDATE
   USING (
     user_id = auth.uid() OR
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS availability_blocks_delete ON availability_blocks;
 CREATE POLICY availability_blocks_delete ON availability_blocks FOR DELETE
   USING (
     user_id = auth.uid() OR
@@ -569,6 +643,7 @@ CREATE POLICY availability_blocks_delete ON availability_blocks FOR DELETE
 -- REVIEW POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS reviews_select ON reviews;
 CREATE POLICY reviews_select ON reviews FOR SELECT
   USING (
     is_public OR
@@ -576,12 +651,14 @@ CREATE POLICY reviews_select ON reviews FOR SELECT
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS reviews_insert ON reviews;
 CREATE POLICY reviews_insert ON reviews FOR INSERT
   WITH CHECK (
     EXISTS (SELECT 1 FROM customers c WHERE c.id = reviewer_customer_id AND c.user_id = auth.uid()) OR
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS reviews_update ON reviews;
 CREATE POLICY reviews_update ON reviews FOR UPDATE
   USING (has_company_access(company_id));
 
@@ -589,9 +666,11 @@ CREATE POLICY reviews_update ON reviews FOR UPDATE
 -- AUDIT LOG POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS audit_logs_select ON audit_logs;
 CREATE POLICY audit_logs_select ON audit_logs FOR SELECT
   USING (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS audit_logs_insert ON audit_logs;
 CREATE POLICY audit_logs_insert ON audit_logs FOR INSERT
   WITH CHECK (true); -- System can always insert
 
@@ -599,18 +678,22 @@ CREATE POLICY audit_logs_insert ON audit_logs FOR INSERT
 -- ANALYTICS POLICIES
 -- =====================================================
 
+DROP POLICY IF EXISTS kpi_snapshots_select ON kpi_snapshots;
 CREATE POLICY kpi_snapshots_select ON kpi_snapshots FOR SELECT
   USING (has_company_access(company_id));
 
+DROP POLICY IF EXISTS dashboards_select ON dashboards;
 CREATE POLICY dashboards_select ON dashboards FOR SELECT
   USING (
     is_public OR
     has_company_access(company_id)
   );
 
+DROP POLICY IF EXISTS dashboards_insert ON dashboards;
 CREATE POLICY dashboards_insert ON dashboards FOR INSERT
   WITH CHECK (is_company_admin() AND has_company_access(company_id));
 
+DROP POLICY IF EXISTS dashboards_update ON dashboards;
 CREATE POLICY dashboards_update ON dashboards FOR UPDATE
   USING (
     created_by = auth.uid() OR

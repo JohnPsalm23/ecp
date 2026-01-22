@@ -73,6 +73,7 @@ ALTER TABLE idempotency_keys ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policy if it exists and recreate
 DROP POLICY IF EXISTS idempotency_keys_service_only ON idempotency_keys;
+DROP POLICY IF EXISTS idempotency_keys_service_only ON idempotency_keys;
 CREATE POLICY idempotency_keys_service_only ON idempotency_keys
   FOR ALL
   USING (true)

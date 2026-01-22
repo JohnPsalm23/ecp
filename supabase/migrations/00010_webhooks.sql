@@ -96,6 +96,7 @@ ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policy if exists and recreate
 DROP POLICY IF EXISTS api_keys_company_access ON api_keys;
+DROP POLICY IF EXISTS api_keys_company_access ON api_keys;
 CREATE POLICY api_keys_company_access ON api_keys
   FOR ALL
   USING (
