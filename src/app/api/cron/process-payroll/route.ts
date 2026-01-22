@@ -92,8 +92,8 @@ export async function GET(request: Request) {
       });
     }
 
-    // Create audit log
-    await supabase.from('audit_logs').insert({
+    // Create audit log (using type assertion since DB types aren't generated)
+    await (supabase.from('audit_logs') as unknown as { insert: (data: Record<string, unknown>) => Promise<unknown> }).insert({
       action: 'payroll_processed',
       entity_type: 'photographer_invoices',
       metadata: {
