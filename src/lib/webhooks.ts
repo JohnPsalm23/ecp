@@ -42,26 +42,38 @@ export async function dispatchWebhook(
 ): Promise<void> {
   const supabase = createAdminClient();
 
-  // Get all active webhooks for this event
+  // Get all webhooks for this company
   const { data: webhooks, error } = await supabase
     .from('webhooks')
     .select('*')
-    .eq('company_id', companyId)
-    .eq('enabled', true)
-    .contains('events', [event]);
+    .eq('company_id', companyId);
 
   if (error) {
     logger.error('Failed to fetch webhooks', new Error(error.message));
     return;
   }
 
-  if (!webhooks || webhooks.length === 0) {
+  // Filter active webhooks that subscribe to this event
+  const activeWebhooks = (webhooks || []).filter(w => 
+    (w.is_active === true || w.enabled === true) && 
+    w.events?.includes(event)
+  );
+
+  if (activeWebhooks.length === 0) {
     return;
   }
 
   // Send webhooks in parallel
   await Promise.allSettled(
-    webhooks.map(webhook => sendWebhook(webhook as WebhookConfig, event, data))
+    activeWebhooks.map(webhook => sendWebhook({
+      id: webhook.id,
+      url: webhook.url,
+      secret: webhook.secret || '',
+      events: webhook.events,
+      enabled: webhook.is_active ?? webhook.enabled ?? false,
+      company_id: webhook.company_id,
+      headers: (webhook.headers as Record<string, string>) || undefined,
+    }, event, data))
   );
 }
 
@@ -115,7 +127,7 @@ async function sendWebhook(
       success: true,
       statusCode: result.status,
       responseTime,
-    });
+    }, payload);
 
     return { success: true, statusCode: result.status, responseTime };
   } catch (error) {
@@ -133,7 +145,7 @@ async function sendWebhook(
       success: false,
       responseTime,
       error: errorMessage,
-    });
+    }, payload);
 
     return { success: false, responseTime, error: errorMessage };
   }
@@ -145,18 +157,19 @@ async function sendWebhook(
 async function logWebhookDelivery(
   webhookId: string,
   event: string,
-  result: WebhookDeliveryResult
+  result: WebhookDeliveryResult,
+  payload: Record<string, unknown> = {}
 ): Promise<void> {
   const supabase = createAdminClient();
 
   await supabase.from('webhook_deliveries').insert({
     webhook_id: webhookId,
-    event,
+    event_type: event,
+    payload: payload,
     success: result.success,
     status_code: result.statusCode,
     response_time_ms: result.responseTime,
     error_message: result.error,
-    created_at: new Date().toISOString(),
   });
 }
 
