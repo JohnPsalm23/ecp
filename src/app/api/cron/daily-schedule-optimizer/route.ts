@@ -9,11 +9,6 @@ import { createAdminClient } from '@/lib/supabase/server';
  * for each active market in their respective timezones.
  */
 
-interface Company {
-  id: string;
-  name: string;
-}
-
 export async function GET(request: Request) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization');
@@ -36,12 +31,12 @@ export async function GET(request: Request) {
 
     const results: Array<{
       company_id: string;
-      company_name: string;
+      company_name: string | null;
       success: boolean;
       result: unknown;
     }> = [];
 
-    for (const company of (companies as Company[]) || []) {
+    for (const company of companies || []) {
       // Call the Edge Function for each company
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/daily-schedule-optimizer`,

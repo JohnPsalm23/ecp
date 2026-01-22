@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { format } from 'date-fns';
+import type { Database } from '@/types/database.types';
+
+type AuditLogInsert = Database['public']['Tables']['audit_logs']['Insert'];
 
 /**
  * Process Payroll Cron Job
@@ -11,12 +14,6 @@ import { format } from 'date-fns';
  * 2. Generates photographer invoices
  * 3. Prepares data for QuickBooks sync
  */
-
-interface Photographer {
-  id: string;
-  company_id: string;
-  user_id: string;
-}
 
 export async function GET(request: Request) {
   // Verify cron secret
@@ -65,7 +62,7 @@ export async function GET(request: Request) {
       result: unknown;
     }> = [];
 
-    for (const photographer of (photographers as Photographer[]) || []) {
+    for (const photographer of photographers || []) {
       // Call the generate-invoice Edge Function
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-invoice`,
@@ -92,8 +89,8 @@ export async function GET(request: Request) {
       });
     }
 
-    // Create audit log (using type assertion since DB types aren't generated)
-    await (supabase.from('audit_logs') as unknown as { insert: (data: Record<string, unknown>) => Promise<unknown> }).insert({
+    // Create audit log
+    const auditLog: AuditLogInsert = {
       action: 'payroll_processed',
       entity_type: 'photographer_invoices',
       metadata: {
@@ -103,7 +100,9 @@ export async function GET(request: Request) {
         successful: results.filter(r => r.success).length,
         failed: results.filter(r => !r.success).length,
       },
-    });
+    };
+
+    await supabase.from('audit_logs').insert(auditLog);
 
     console.log('Payroll processing completed:', {
       period: `${format(periodStart, 'yyyy-MM-dd')} to ${format(periodEnd, 'yyyy-MM-dd')}`,
