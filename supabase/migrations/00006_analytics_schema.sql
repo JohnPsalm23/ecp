@@ -227,20 +227,25 @@ WITH job_stats AS (
   FROM qc_jobs qj
   GROUP BY qj.company_id, DATE_TRUNC('week', qj.created_at)
 ),
-issue_stats AS (
+issue_counts AS (
   SELECT
     qj.company_id,
     DATE_TRUNC('week', qj.created_at) AS week,
-    COUNT(qi.id) AS total_issues,
-    jsonb_object_agg(qi.issue_type, qi.issue_count) AS issue_breakdown
+    qi.issue_type,
+    COUNT(*) AS issue_count
   FROM qc_jobs qj
   JOIN qc_results qr ON qj.id = qr.qc_job_id
-  JOIN (
-    SELECT qc_result_id, issue_type, COUNT(*) AS issue_count
-    FROM qc_issues
-    GROUP BY qc_result_id, issue_type
-  ) qi ON qr.id = qi.qc_result_id
-  GROUP BY qj.company_id, DATE_TRUNC('week', qj.created_at)
+  JOIN qc_issues qi ON qr.id = qi.qc_result_id
+  GROUP BY qj.company_id, DATE_TRUNC('week', qj.created_at), qi.issue_type
+),
+issue_stats AS (
+  SELECT
+    company_id,
+    week,
+    SUM(issue_count) AS total_issues,
+    jsonb_object_agg(issue_type, issue_count) AS issue_breakdown
+  FROM issue_counts
+  GROUP BY company_id, week
 )
 SELECT
   js.company_id,
