@@ -3,7 +3,7 @@
 -- =====================================================
 
 -- Properties (locations for shoots)
-CREATE TABLE properties (
+CREATE TABLE IF NOT EXISTS properties (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
@@ -63,7 +63,7 @@ CREATE TABLE properties (
 );
 
 -- Orders
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   market_id UUID NOT NULL REFERENCES markets(id) ON DELETE RESTRICT,
@@ -147,7 +147,7 @@ CREATE TABLE orders (
 );
 
 -- Order items (products in an order)
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id) ON DELETE SET NULL,
@@ -183,7 +183,7 @@ CREATE TABLE order_items (
 );
 
 -- Appointments (scheduled shoots)
-CREATE TABLE appointments (
+CREATE TABLE IF NOT EXISTS appointments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -251,7 +251,7 @@ CREATE TABLE appointments (
 );
 
 -- Order status events (audit trail)
-CREATE TABLE order_status_events (
+CREATE TABLE IF NOT EXISTS order_status_events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   
@@ -270,7 +270,7 @@ CREATE TABLE order_status_events (
 );
 
 -- Appointment status events
-CREATE TABLE appointment_status_events (
+CREATE TABLE IF NOT EXISTS appointment_status_events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   appointment_id UUID NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
   
@@ -289,7 +289,7 @@ CREATE TABLE appointment_status_events (
 -- =====================================================
 
 -- Deliverables (what's expected for an order)
-CREATE TABLE deliverables (
+CREATE TABLE IF NOT EXISTS deliverables (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   order_item_id UUID REFERENCES order_items(id) ON DELETE CASCADE,
@@ -317,7 +317,7 @@ CREATE TABLE deliverables (
 );
 
 -- Media assets (uploaded files)
-CREATE TABLE media_assets (
+CREATE TABLE IF NOT EXISTS media_assets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
@@ -394,7 +394,7 @@ CREATE TABLE media_assets (
 );
 
 -- Upload jobs (batch upload tracking)
-CREATE TABLE upload_jobs (
+CREATE TABLE IF NOT EXISTS upload_jobs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -424,7 +424,7 @@ CREATE TABLE upload_jobs (
 );
 
 -- Edit requests
-CREATE TABLE edit_requests (
+CREATE TABLE IF NOT EXISTS edit_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   media_asset_id UUID REFERENCES media_assets(id) ON DELETE CASCADE,
@@ -465,49 +465,49 @@ CREATE TABLE edit_requests (
 -- =====================================================
 
 -- Properties
-CREATE INDEX idx_properties_company ON properties(company_id);
-CREATE INDEX idx_properties_customer ON properties(customer_id);
-CREATE INDEX idx_properties_market ON properties(market_id);
-CREATE INDEX idx_properties_location ON properties(lat, lng);
-CREATE INDEX idx_properties_address ON properties USING gin(to_tsvector('english', formatted_address));
+CREATE INDEX IF NOT EXISTS idx_properties_company ON properties(company_id);
+CREATE INDEX IF NOT EXISTS idx_properties_customer ON properties(customer_id);
+CREATE INDEX IF NOT EXISTS idx_properties_market ON properties(market_id);
+CREATE INDEX IF NOT EXISTS idx_properties_location ON properties(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_properties_address ON properties USING gin(to_tsvector('english', formatted_address));
 
 -- Orders
-CREATE INDEX idx_orders_company ON orders(company_id);
-CREATE INDEX idx_orders_market ON orders(market_id);
-CREATE INDEX idx_orders_customer ON orders(customer_id);
-CREATE INDEX idx_orders_property ON orders(property_id);
-CREATE INDEX idx_orders_status ON orders(company_id, status);
-CREATE INDEX idx_orders_number ON orders(order_number);
-CREATE INDEX idx_orders_date ON orders(company_id, preferred_date);
-CREATE INDEX idx_orders_sales_rep ON orders(sales_rep_id);
-CREATE INDEX idx_orders_created ON orders(company_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_company ON orders(company_id);
+CREATE INDEX IF NOT EXISTS idx_orders_market ON orders(market_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_property ON orders(property_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_orders_number ON orders(order_number);
+CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(company_id, preferred_date);
+CREATE INDEX IF NOT EXISTS idx_orders_sales_rep ON orders(sales_rep_id);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(company_id, created_at DESC);
 
 -- Order items
-CREATE INDEX idx_order_items_order ON order_items(order_id);
-CREATE INDEX idx_order_items_product ON order_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_product ON order_items(product_id);
 
 -- Appointments
-CREATE INDEX idx_appointments_company ON appointments(company_id);
-CREATE INDEX idx_appointments_order ON appointments(order_id);
-CREATE INDEX idx_appointments_photographer ON appointments(photographer_id);
-CREATE INDEX idx_appointments_date ON appointments(company_id, scheduled_date);
-CREATE INDEX idx_appointments_status ON appointments(company_id, status);
-CREATE INDEX idx_appointments_photographer_date ON appointments(photographer_id, scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_appointments_company ON appointments(company_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_order ON appointments(order_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_photographer ON appointments(photographer_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(company_id, scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_appointments_photographer_date ON appointments(photographer_id, scheduled_date);
 
 -- Order status events
-CREATE INDEX idx_order_status_events_order ON order_status_events(order_id);
-CREATE INDEX idx_order_status_events_date ON order_status_events(changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_status_events_order ON order_status_events(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_status_events_date ON order_status_events(changed_at DESC);
 
 -- Media assets
-CREATE INDEX idx_media_assets_company ON media_assets(company_id);
-CREATE INDEX idx_media_assets_order ON media_assets(order_id);
-CREATE INDEX idx_media_assets_deliverable ON media_assets(deliverable_id);
-CREATE INDEX idx_media_assets_type ON media_assets(company_id, media_type);
-CREATE INDEX idx_media_assets_qc ON media_assets(company_id, qc_status);
+CREATE INDEX IF NOT EXISTS idx_media_assets_company ON media_assets(company_id);
+CREATE INDEX IF NOT EXISTS idx_media_assets_order ON media_assets(order_id);
+CREATE INDEX IF NOT EXISTS idx_media_assets_deliverable ON media_assets(deliverable_id);
+CREATE INDEX IF NOT EXISTS idx_media_assets_type ON media_assets(company_id, media_type);
+CREATE INDEX IF NOT EXISTS idx_media_assets_qc ON media_assets(company_id, qc_status);
 
 -- Upload jobs
-CREATE INDEX idx_upload_jobs_company ON upload_jobs(company_id);
-CREATE INDEX idx_upload_jobs_order ON upload_jobs(order_id);
+CREATE INDEX IF NOT EXISTS idx_upload_jobs_company ON upload_jobs(company_id);
+CREATE INDEX IF NOT EXISTS idx_upload_jobs_order ON upload_jobs(order_id);
 
 -- =====================================================
 -- TRIGGERS

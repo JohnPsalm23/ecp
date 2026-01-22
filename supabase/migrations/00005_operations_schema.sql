@@ -4,7 +4,7 @@
 -- =====================================================
 
 -- Calendar availability blocks
-CREATE TABLE availability_blocks (
+CREATE TABLE IF NOT EXISTS availability_blocks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -40,7 +40,7 @@ CREATE TABLE availability_blocks (
 );
 
 -- Holiday schedules
-CREATE TABLE holidays (
+CREATE TABLE IF NOT EXISTS holidays (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   market_id UUID REFERENCES markets(id), -- null = company-wide
@@ -59,7 +59,7 @@ CREATE TABLE holidays (
 );
 
 -- Equipment
-CREATE TABLE equipment (
+CREATE TABLE IF NOT EXISTS equipment (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -111,7 +111,7 @@ CREATE TABLE equipment (
 );
 
 -- Equipment assignments history
-CREATE TABLE equipment_assignments (
+CREATE TABLE IF NOT EXISTS equipment_assignments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   equipment_id UUID NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
   photographer_id UUID NOT NULL REFERENCES photographers(id) ON DELETE CASCADE,
@@ -130,7 +130,7 @@ CREATE TABLE equipment_assignments (
 );
 
 -- Equipment maintenance logs
-CREATE TABLE equipment_maintenance (
+CREATE TABLE IF NOT EXISTS equipment_maintenance (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   equipment_id UUID NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
   
@@ -149,7 +149,7 @@ CREATE TABLE equipment_maintenance (
 );
 
 -- Messages
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -202,7 +202,7 @@ CREATE TABLE messages (
 );
 
 -- Message templates
-CREATE TABLE message_templates (
+CREATE TABLE IF NOT EXISTS message_templates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -231,7 +231,7 @@ CREATE TABLE message_templates (
 );
 
 -- Notes (internal/private notes on entities)
-CREATE TABLE notes (
+CREATE TABLE IF NOT EXISTS notes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -260,7 +260,7 @@ CREATE TABLE notes (
 );
 
 -- Tasks
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -302,7 +302,7 @@ CREATE TABLE tasks (
 );
 
 -- Reviews and ratings
-CREATE TABLE reviews (
+CREATE TABLE IF NOT EXISTS reviews (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -353,7 +353,7 @@ CREATE TABLE reviews (
 );
 
 -- Audit log (comprehensive activity tracking)
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
   
@@ -385,7 +385,7 @@ CREATE TABLE audit_logs (
 );
 
 -- Webhooks
-CREATE TABLE webhooks (
+CREATE TABLE IF NOT EXISTS webhooks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -414,7 +414,7 @@ CREATE TABLE webhooks (
 );
 
 -- Webhook deliveries
-CREATE TABLE webhook_deliveries (
+CREATE TABLE IF NOT EXISTS webhook_deliveries (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   webhook_id UUID NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
   
@@ -443,53 +443,53 @@ CREATE TABLE webhook_deliveries (
 -- =====================================================
 
 -- Availability
-CREATE INDEX idx_availability_blocks_user ON availability_blocks(user_id);
-CREATE INDEX idx_availability_blocks_photographer ON availability_blocks(photographer_id);
-CREATE INDEX idx_availability_blocks_time ON availability_blocks(start_time, end_time);
-CREATE INDEX idx_availability_blocks_type ON availability_blocks(availability_type);
+CREATE INDEX IF NOT EXISTS idx_availability_blocks_user ON availability_blocks(user_id);
+CREATE INDEX IF NOT EXISTS idx_availability_blocks_photographer ON availability_blocks(photographer_id);
+CREATE INDEX IF NOT EXISTS idx_availability_blocks_time ON availability_blocks(start_time, end_time);
+CREATE INDEX IF NOT EXISTS idx_availability_blocks_type ON availability_blocks(availability_type);
 
 -- Equipment
-CREATE INDEX idx_equipment_company ON equipment(company_id);
-CREATE INDEX idx_equipment_assigned ON equipment(assigned_to);
-CREATE INDEX idx_equipment_status ON equipment(company_id, status);
-CREATE INDEX idx_equipment_serial ON equipment(serial_number);
+CREATE INDEX IF NOT EXISTS idx_equipment_company ON equipment(company_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_assigned ON equipment(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_equipment_status ON equipment(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_equipment_serial ON equipment(serial_number);
 
 -- Messages
-CREATE INDEX idx_messages_company ON messages(company_id);
-CREATE INDEX idx_messages_sender ON messages(sender_id);
-CREATE INDEX idx_messages_recipient ON messages(recipient_id);
-CREATE INDEX idx_messages_thread ON messages(thread_id);
-CREATE INDEX idx_messages_order ON messages(order_id);
-CREATE INDEX idx_messages_created ON messages(company_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_company ON messages(company_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_recipient ON messages(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages(thread_id);
+CREATE INDEX IF NOT EXISTS idx_messages_order ON messages(order_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(company_id, created_at DESC);
 
 -- Notes
-CREATE INDEX idx_notes_entity ON notes(entity_type, entity_id);
-CREATE INDEX idx_notes_company ON notes(company_id);
-CREATE INDEX idx_notes_created_by ON notes(created_by);
+CREATE INDEX IF NOT EXISTS idx_notes_entity ON notes(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_notes_company ON notes(company_id);
+CREATE INDEX IF NOT EXISTS idx_notes_created_by ON notes(created_by);
 
 -- Tasks
-CREATE INDEX idx_tasks_company ON tasks(company_id);
-CREATE INDEX idx_tasks_assigned ON tasks(assigned_to);
-CREATE INDEX idx_tasks_status ON tasks(company_id, status);
-CREATE INDEX idx_tasks_due ON tasks(due_at);
+CREATE INDEX IF NOT EXISTS idx_tasks_company ON tasks(company_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_at);
 
 -- Reviews
-CREATE INDEX idx_reviews_company ON reviews(company_id);
-CREATE INDEX idx_reviews_order ON reviews(order_id);
-CREATE INDEX idx_reviews_photographer ON reviews(photographer_id);
-CREATE INDEX idx_reviews_rating ON reviews(overall_rating);
+CREATE INDEX IF NOT EXISTS idx_reviews_company ON reviews(company_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_order ON reviews(order_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_photographer ON reviews(photographer_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(overall_rating);
 
 -- Audit logs
-CREATE INDEX idx_audit_logs_company ON audit_logs(company_id);
-CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_company ON audit_logs(company_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
 
 -- Webhooks
-CREATE INDEX idx_webhooks_company ON webhooks(company_id);
-CREATE INDEX idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id);
-CREATE INDEX idx_webhook_deliveries_status ON webhook_deliveries(status);
+CREATE INDEX IF NOT EXISTS idx_webhooks_company ON webhooks(company_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON webhook_deliveries(status);
 
 -- =====================================================
 -- TRIGGERS

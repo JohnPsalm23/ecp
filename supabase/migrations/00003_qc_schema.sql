@@ -3,7 +3,7 @@
 -- =====================================================
 
 -- QC jobs (batch QC for an order/upload)
-CREATE TABLE qc_jobs (
+CREATE TABLE IF NOT EXISTS qc_jobs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -53,7 +53,7 @@ CREATE TABLE qc_jobs (
 );
 
 -- QC results (per-asset QC analysis)
-CREATE TABLE qc_results (
+CREATE TABLE IF NOT EXISTS qc_results (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   qc_job_id UUID NOT NULL REFERENCES qc_jobs(id) ON DELETE CASCADE,
   media_asset_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
@@ -93,7 +93,7 @@ CREATE TABLE qc_results (
 );
 
 -- QC issues (specific problems found)
-CREATE TABLE qc_issues (
+CREATE TABLE IF NOT EXISTS qc_issues (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   qc_result_id UUID NOT NULL REFERENCES qc_results(id) ON DELETE CASCADE,
   media_asset_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
@@ -127,7 +127,7 @@ CREATE TABLE qc_issues (
 );
 
 -- QC scores (historical performance tracking)
-CREATE TABLE qc_scores (
+CREATE TABLE IF NOT EXISTS qc_scores (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -170,7 +170,7 @@ CREATE TABLE qc_scores (
 );
 
 -- QC rules (configurable QC criteria)
-CREATE TABLE qc_rules (
+CREATE TABLE IF NOT EXISTS qc_rules (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -212,7 +212,7 @@ CREATE TABLE qc_rules (
 );
 
 -- AI flags (system-generated recommendations)
-CREATE TABLE ai_flags (
+CREATE TABLE IF NOT EXISTS ai_flags (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -250,7 +250,7 @@ CREATE TABLE ai_flags (
 );
 
 -- AI recommendations (proactive suggestions)
-CREATE TABLE ai_recommendations (
+CREATE TABLE IF NOT EXISTS ai_recommendations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -287,30 +287,30 @@ CREATE TABLE ai_recommendations (
 -- INDEXES
 -- =====================================================
 
-CREATE INDEX idx_qc_jobs_company ON qc_jobs(company_id);
-CREATE INDEX idx_qc_jobs_order ON qc_jobs(order_id);
-CREATE INDEX idx_qc_jobs_status ON qc_jobs(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_qc_jobs_company ON qc_jobs(company_id);
+CREATE INDEX IF NOT EXISTS idx_qc_jobs_order ON qc_jobs(order_id);
+CREATE INDEX IF NOT EXISTS idx_qc_jobs_status ON qc_jobs(company_id, status);
 
-CREATE INDEX idx_qc_results_job ON qc_results(qc_job_id);
-CREATE INDEX idx_qc_results_asset ON qc_results(media_asset_id);
-CREATE INDEX idx_qc_results_status ON qc_results(status);
+CREATE INDEX IF NOT EXISTS idx_qc_results_job ON qc_results(qc_job_id);
+CREATE INDEX IF NOT EXISTS idx_qc_results_asset ON qc_results(media_asset_id);
+CREATE INDEX IF NOT EXISTS idx_qc_results_status ON qc_results(status);
 
-CREATE INDEX idx_qc_issues_result ON qc_issues(qc_result_id);
-CREATE INDEX idx_qc_issues_asset ON qc_issues(media_asset_id);
-CREATE INDEX idx_qc_issues_type ON qc_issues(issue_type);
-CREATE INDEX idx_qc_issues_severity ON qc_issues(severity);
+CREATE INDEX IF NOT EXISTS idx_qc_issues_result ON qc_issues(qc_result_id);
+CREATE INDEX IF NOT EXISTS idx_qc_issues_asset ON qc_issues(media_asset_id);
+CREATE INDEX IF NOT EXISTS idx_qc_issues_type ON qc_issues(issue_type);
+CREATE INDEX IF NOT EXISTS idx_qc_issues_severity ON qc_issues(severity);
 
-CREATE INDEX idx_qc_scores_company ON qc_scores(company_id);
-CREATE INDEX idx_qc_scores_photographer ON qc_scores(photographer_id);
-CREATE INDEX idx_qc_scores_period ON qc_scores(period_type, period_start);
+CREATE INDEX IF NOT EXISTS idx_qc_scores_company ON qc_scores(company_id);
+CREATE INDEX IF NOT EXISTS idx_qc_scores_photographer ON qc_scores(photographer_id);
+CREATE INDEX IF NOT EXISTS idx_qc_scores_period ON qc_scores(period_type, period_start);
 
-CREATE INDEX idx_ai_flags_company ON ai_flags(company_id);
-CREATE INDEX idx_ai_flags_entity ON ai_flags(entity_type, entity_id);
-CREATE INDEX idx_ai_flags_status ON ai_flags(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_ai_flags_company ON ai_flags(company_id);
+CREATE INDEX IF NOT EXISTS idx_ai_flags_entity ON ai_flags(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_ai_flags_status ON ai_flags(company_id, status);
 
-CREATE INDEX idx_ai_recommendations_company ON ai_recommendations(company_id);
-CREATE INDEX idx_ai_recommendations_target ON ai_recommendations(target_type, target_id);
-CREATE INDEX idx_ai_recommendations_status ON ai_recommendations(status);
+CREATE INDEX IF NOT EXISTS idx_ai_recommendations_company ON ai_recommendations(company_id);
+CREATE INDEX IF NOT EXISTS idx_ai_recommendations_target ON ai_recommendations(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_ai_recommendations_status ON ai_recommendations(status);
 
 -- =====================================================
 -- TRIGGERS

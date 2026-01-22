@@ -4,7 +4,7 @@
 -- =====================================================
 
 -- KPI definitions
-CREATE TABLE kpi_definitions (
+CREATE TABLE IF NOT EXISTS kpi_definitions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   
   name VARCHAR(255) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE kpi_definitions (
 );
 
 -- KPI snapshots (historical metric values)
-CREATE TABLE kpi_snapshots (
+CREATE TABLE IF NOT EXISTS kpi_snapshots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   kpi_id UUID NOT NULL REFERENCES kpi_definitions(id) ON DELETE CASCADE,
@@ -61,7 +61,7 @@ CREATE TABLE kpi_snapshots (
 );
 
 -- Dashboard configurations
-CREATE TABLE dashboards (
+CREATE TABLE IF NOT EXISTS dashboards (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -88,7 +88,7 @@ CREATE TABLE dashboards (
 );
 
 -- Dashboard widgets
-CREATE TABLE dashboard_widgets (
+CREATE TABLE IF NOT EXISTS dashboard_widgets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   dashboard_id UUID NOT NULL REFERENCES dashboards(id) ON DELETE CASCADE,
   
@@ -138,7 +138,7 @@ FROM orders o
 JOIN markets m ON o.market_id = m.id
 GROUP BY o.company_id, o.market_id, DATE(o.created_at AT TIME ZONE m.timezone), m.timezone;
 
-CREATE UNIQUE INDEX ON mv_daily_order_metrics (company_id, market_id, date);
+CREATE UNIQUE INDEX IF NOT EXISTS ON mv_daily_order_metrics (company_id, market_id, date);
 
 -- Photographer performance metrics
 CREATE MATERIALIZED VIEW mv_photographer_performance AS
@@ -169,7 +169,7 @@ LEFT JOIN media_assets ma ON a.id = ma.appointment_id
 LEFT JOIN qc_results qr ON ma.id = qr.media_asset_id
 GROUP BY p.company_id, p.id, p.user_id;
 
-CREATE UNIQUE INDEX ON mv_photographer_performance (company_id, photographer_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ON mv_photographer_performance (company_id, photographer_id);
 
 -- Customer lifetime value
 CREATE MATERIALIZED VIEW mv_customer_ltv AS
@@ -190,7 +190,7 @@ FROM customers c
 LEFT JOIN orders o ON c.id = o.customer_id AND o.status NOT IN ('cancelled', 'draft')
 GROUP BY c.company_id, c.id;
 
-CREATE UNIQUE INDEX ON mv_customer_ltv (company_id, customer_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ON mv_customer_ltv (company_id, customer_id);
 
 -- Product performance
 CREATE MATERIALIZED VIEW mv_product_performance AS
@@ -212,7 +212,7 @@ LEFT JOIN order_items oi ON p.id = oi.product_id
 LEFT JOIN orders o ON oi.order_id = o.id AND o.status NOT IN ('cancelled', 'draft')
 GROUP BY p.company_id, p.id, p.name, p.category_id;
 
-CREATE UNIQUE INDEX ON mv_product_performance (company_id, product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ON mv_product_performance (company_id, product_id);
 
 -- QC trends
 CREATE MATERIALIZED VIEW mv_qc_trends AS
@@ -260,7 +260,7 @@ SELECT
 FROM job_stats js
 LEFT JOIN issue_stats iss ON js.company_id = iss.company_id AND js.week = iss.week;
 
-CREATE UNIQUE INDEX ON mv_qc_trends (company_id, week);
+CREATE UNIQUE INDEX IF NOT EXISTS ON mv_qc_trends (company_id, week);
 
 -- Sales rep performance
 CREATE MATERIALIZED VIEW mv_sales_performance AS
@@ -283,7 +283,7 @@ WHERE o.status NOT IN ('cancelled', 'draft')
   AND o.sales_rep_id IS NOT NULL
 GROUP BY o.company_id, o.sales_rep_id, u.display_name, DATE_TRUNC('month', o.created_at);
 
-CREATE UNIQUE INDEX ON mv_sales_performance (company_id, sales_rep_id, month);
+CREATE UNIQUE INDEX IF NOT EXISTS ON mv_sales_performance (company_id, sales_rep_id, month);
 
 -- =====================================================
 -- REFRESH FUNCTIONS
@@ -305,15 +305,15 @@ $$ LANGUAGE plpgsql;
 -- INDEXES
 -- =====================================================
 
-CREATE INDEX idx_kpi_snapshots_company ON kpi_snapshots(company_id);
-CREATE INDEX idx_kpi_snapshots_kpi ON kpi_snapshots(kpi_id);
-CREATE INDEX idx_kpi_snapshots_period ON kpi_snapshots(period_type, period_start);
-CREATE INDEX idx_kpi_snapshots_dimension ON kpi_snapshots(dimension_type, dimension_id);
+CREATE INDEX IF NOT EXISTS idx_kpi_snapshots_company ON kpi_snapshots(company_id);
+CREATE INDEX IF NOT EXISTS idx_kpi_snapshots_kpi ON kpi_snapshots(kpi_id);
+CREATE INDEX IF NOT EXISTS idx_kpi_snapshots_period ON kpi_snapshots(period_type, period_start);
+CREATE INDEX IF NOT EXISTS idx_kpi_snapshots_dimension ON kpi_snapshots(dimension_type, dimension_id);
 
-CREATE INDEX idx_dashboards_company ON dashboards(company_id);
-CREATE INDEX idx_dashboards_slug ON dashboards(company_id, slug);
+CREATE INDEX IF NOT EXISTS idx_dashboards_company ON dashboards(company_id);
+CREATE INDEX IF NOT EXISTS idx_dashboards_slug ON dashboards(company_id, slug);
 
-CREATE INDEX idx_dashboard_widgets_dashboard ON dashboard_widgets(dashboard_id);
+CREATE INDEX IF NOT EXISTS idx_dashboard_widgets_dashboard ON dashboard_widgets(dashboard_id);
 
 -- =====================================================
 -- TRIGGERS

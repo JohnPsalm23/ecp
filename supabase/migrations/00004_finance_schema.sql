@@ -3,7 +3,7 @@
 -- =====================================================
 
 -- Customer invoices
-CREATE TABLE customer_invoices (
+CREATE TABLE IF NOT EXISTS customer_invoices (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
@@ -61,7 +61,7 @@ CREATE TABLE customer_invoices (
 );
 
 -- Invoice line items
-CREATE TABLE customer_invoice_items (
+CREATE TABLE IF NOT EXISTS customer_invoice_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   invoice_id UUID NOT NULL REFERENCES customer_invoices(id) ON DELETE CASCADE,
   order_id UUID REFERENCES orders(id),
@@ -78,7 +78,7 @@ CREATE TABLE customer_invoice_items (
 );
 
 -- Invoice payments
-CREATE TABLE invoice_payments (
+CREATE TABLE IF NOT EXISTS invoice_payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   invoice_id UUID NOT NULL REFERENCES customer_invoices(id) ON DELETE CASCADE,
   
@@ -102,7 +102,7 @@ CREATE TABLE invoice_payments (
 );
 
 -- Photographer invoices (payroll)
-CREATE TABLE photographer_invoices (
+CREATE TABLE IF NOT EXISTS photographer_invoices (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   photographer_id UUID NOT NULL REFERENCES photographers(id) ON DELETE RESTRICT,
@@ -156,7 +156,7 @@ CREATE TABLE photographer_invoices (
 );
 
 -- Photographer invoice line items
-CREATE TABLE photographer_invoice_items (
+CREATE TABLE IF NOT EXISTS photographer_invoice_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   invoice_id UUID NOT NULL REFERENCES photographer_invoices(id) ON DELETE CASCADE,
   
@@ -179,7 +179,7 @@ CREATE TABLE photographer_invoice_items (
 );
 
 -- Commissions
-CREATE TABLE commissions (
+CREATE TABLE IF NOT EXISTS commissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -221,7 +221,7 @@ CREATE TABLE commissions (
 );
 
 -- Bonuses
-CREATE TABLE bonuses (
+CREATE TABLE IF NOT EXISTS bonuses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -256,7 +256,7 @@ CREATE TABLE bonuses (
 );
 
 -- Incentive programs
-CREATE TABLE incentive_programs (
+CREATE TABLE IF NOT EXISTS incentive_programs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -302,7 +302,7 @@ CREATE TABLE incentive_programs (
 );
 
 -- Incentive payouts
-CREATE TABLE incentive_payouts (
+CREATE TABLE IF NOT EXISTS incentive_payouts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   incentive_program_id UUID NOT NULL REFERENCES incentive_programs(id) ON DELETE CASCADE,
   
@@ -333,7 +333,7 @@ CREATE TABLE incentive_payouts (
 );
 
 -- Mileage logs
-CREATE TABLE mileage_logs (
+CREATE TABLE IF NOT EXISTS mileage_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   photographer_id UUID NOT NULL REFERENCES photographers(id) ON DELETE CASCADE,
@@ -381,7 +381,7 @@ CREATE TABLE mileage_logs (
 );
 
 -- Clock in/out records
-CREATE TABLE time_entries (
+CREATE TABLE IF NOT EXISTS time_entries (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -419,7 +419,7 @@ CREATE TABLE time_entries (
 );
 
 -- Coupons
-CREATE TABLE coupons (
+CREATE TABLE IF NOT EXISTS coupons (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -464,7 +464,7 @@ CREATE TABLE coupons (
 );
 
 -- Coupon usage
-CREATE TABLE coupon_usage (
+CREATE TABLE IF NOT EXISTS coupon_usage (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   coupon_id UUID NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -476,7 +476,7 @@ CREATE TABLE coupon_usage (
 );
 
 -- Referrals
-CREATE TABLE referrals (
+CREATE TABLE IF NOT EXISTS referrals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -522,7 +522,7 @@ CREATE TABLE referrals (
 );
 
 -- Customer credits
-CREATE TABLE customer_credits (
+CREATE TABLE IF NOT EXISTS customer_credits (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -547,7 +547,7 @@ CREATE TABLE customer_credits (
 );
 
 -- Credit transactions
-CREATE TABLE credit_transactions (
+CREATE TABLE IF NOT EXISTS credit_transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   credit_id UUID NOT NULL REFERENCES customer_credits(id) ON DELETE CASCADE,
   order_id UUID REFERENCES orders(id),
@@ -566,41 +566,41 @@ CREATE TABLE credit_transactions (
 -- =====================================================
 
 -- Customer invoices
-CREATE INDEX idx_customer_invoices_company ON customer_invoices(company_id);
-CREATE INDEX idx_customer_invoices_customer ON customer_invoices(customer_id);
-CREATE INDEX idx_customer_invoices_status ON customer_invoices(company_id, status);
-CREATE INDEX idx_customer_invoices_due_date ON customer_invoices(due_date);
+CREATE INDEX IF NOT EXISTS idx_customer_invoices_company ON customer_invoices(company_id);
+CREATE INDEX IF NOT EXISTS idx_customer_invoices_customer ON customer_invoices(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_invoices_status ON customer_invoices(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_customer_invoices_due_date ON customer_invoices(due_date);
 
 -- Photographer invoices
-CREATE INDEX idx_photographer_invoices_company ON photographer_invoices(company_id);
-CREATE INDEX idx_photographer_invoices_photographer ON photographer_invoices(photographer_id);
-CREATE INDEX idx_photographer_invoices_status ON photographer_invoices(status);
-CREATE INDEX idx_photographer_invoices_period ON photographer_invoices(period_start, period_end);
+CREATE INDEX IF NOT EXISTS idx_photographer_invoices_company ON photographer_invoices(company_id);
+CREATE INDEX IF NOT EXISTS idx_photographer_invoices_photographer ON photographer_invoices(photographer_id);
+CREATE INDEX IF NOT EXISTS idx_photographer_invoices_status ON photographer_invoices(status);
+CREATE INDEX IF NOT EXISTS idx_photographer_invoices_period ON photographer_invoices(period_start, period_end);
 
 -- Commissions
-CREATE INDEX idx_commissions_company ON commissions(company_id);
-CREATE INDEX idx_commissions_user ON commissions(user_id);
-CREATE INDEX idx_commissions_order ON commissions(order_id);
-CREATE INDEX idx_commissions_status ON commissions(status);
+CREATE INDEX IF NOT EXISTS idx_commissions_company ON commissions(company_id);
+CREATE INDEX IF NOT EXISTS idx_commissions_user ON commissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_commissions_order ON commissions(order_id);
+CREATE INDEX IF NOT EXISTS idx_commissions_status ON commissions(status);
 
 -- Mileage
-CREATE INDEX idx_mileage_logs_photographer ON mileage_logs(photographer_id);
-CREATE INDEX idx_mileage_logs_date ON mileage_logs(log_date);
-CREATE INDEX idx_mileage_logs_status ON mileage_logs(status);
+CREATE INDEX IF NOT EXISTS idx_mileage_logs_photographer ON mileage_logs(photographer_id);
+CREATE INDEX IF NOT EXISTS idx_mileage_logs_date ON mileage_logs(log_date);
+CREATE INDEX IF NOT EXISTS idx_mileage_logs_status ON mileage_logs(status);
 
 -- Coupons
-CREATE INDEX idx_coupons_company ON coupons(company_id);
-CREATE INDEX idx_coupons_code ON coupons(company_id, code);
-CREATE INDEX idx_coupons_active ON coupons(company_id, is_active, start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_coupons_company ON coupons(company_id);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(company_id, code);
+CREATE INDEX IF NOT EXISTS idx_coupons_active ON coupons(company_id, is_active, start_date, end_date);
 
 -- Referrals
-CREATE INDEX idx_referrals_company ON referrals(company_id);
-CREATE INDEX idx_referrals_referrer ON referrals(referrer_customer_id);
-CREATE INDEX idx_referrals_code ON referrals(company_id, referral_code);
+CREATE INDEX IF NOT EXISTS idx_referrals_company ON referrals(company_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_customer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(company_id, referral_code);
 
 -- Credits
-CREATE INDEX idx_customer_credits_customer ON customer_credits(customer_id);
-CREATE INDEX idx_customer_credits_active ON customer_credits(customer_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_customer_credits_customer ON customer_credits(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_credits_active ON customer_credits(customer_id, is_active);
 
 -- =====================================================
 -- TRIGGERS

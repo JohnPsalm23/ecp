@@ -25,7 +25,7 @@ BEGIN
 END $$;
 
 -- Additional index for company + date filtering
-CREATE INDEX IF NOT EXISTS idx_audit_logs_company_date ON audit_logs(company_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_audit_logs_company_date ON audit_logs(company_id, created_at DESC);
 
 -- =====================================================
 -- RETENTION POLICY
@@ -46,7 +46,7 @@ $$ LANGUAGE plpgsql;
 -- Prevents duplicate operations for API requests
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS idempotency_keys (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS idempotency_keys (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   key VARCHAR(255) UNIQUE NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'processing', -- 'processing', 'completed', 'failed'
@@ -57,8 +57,8 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
 );
 
 -- Index for cleanup and lookup
-CREATE INDEX IF NOT EXISTS idx_idempotency_keys_key ON idempotency_keys(key);
-CREATE INDEX IF NOT EXISTS idx_idempotency_keys_expires ON idempotency_keys(expires_at);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_idempotency_keys_key ON idempotency_keys(key);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_idempotency_keys_expires ON idempotency_keys(expires_at);
 
 -- Auto-cleanup expired keys
 CREATE OR REPLACE FUNCTION cleanup_expired_idempotency_keys()

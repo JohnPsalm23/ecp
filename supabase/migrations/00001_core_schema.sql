@@ -10,163 +10,123 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS "vector";
 
 -- =====================================================
--- ENUMS
+-- ENUMS (idempotent - only create if not exists)
 -- =====================================================
 
-CREATE TYPE user_role AS ENUM (
-  'super_admin',
-  'company_admin',
-  'market_manager',
-  'sales_rep',
-  'photographer',
-  'editor',
-  'qc_reviewer',
-  'customer',
-  'support'
-);
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM (
+    'super_admin', 'company_admin', 'market_manager', 'sales_rep',
+    'photographer', 'editor', 'qc_reviewer', 'customer', 'support'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE order_status AS ENUM (
-  'draft',
-  'pending_payment',
-  'confirmed',
-  'scheduled',
-  'en_route',
-  'started',
-  'completed',
-  'uploading',
-  'editing',
-  'qc_pending',
-  'qc_failed',
-  'qc_passed',
-  'delivered',
-  'cancelled',
-  'on_hold'
-);
+DO $$ BEGIN
+  CREATE TYPE order_status AS ENUM (
+    'draft', 'pending_payment', 'confirmed', 'scheduled', 'en_route',
+    'started', 'completed', 'uploading', 'editing', 'qc_pending',
+    'qc_failed', 'qc_passed', 'delivered', 'cancelled', 'on_hold'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE appointment_status AS ENUM (
-  'scheduled',
-  'confirmed',
-  'en_route',
-  'arrived',
-  'in_progress',
-  'completed',
-  'cancelled',
-  'no_show',
-  'rescheduled'
-);
+DO $$ BEGIN
+  CREATE TYPE appointment_status AS ENUM (
+    'scheduled', 'confirmed', 'en_route', 'arrived', 'in_progress',
+    'completed', 'cancelled', 'no_show', 'rescheduled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE payment_status AS ENUM (
-  'pending',
-  'processing',
-  'succeeded',
-  'failed',
-  'refunded',
-  'partially_refunded',
-  'disputed'
-);
+DO $$ BEGIN
+  CREATE TYPE payment_status AS ENUM (
+    'pending', 'processing', 'succeeded', 'failed',
+    'refunded', 'partially_refunded', 'disputed'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE invoice_status AS ENUM (
-  'draft',
-  'pending',
-  'sent',
-  'paid',
-  'overdue',
-  'cancelled',
-  'void'
-);
+DO $$ BEGIN
+  CREATE TYPE invoice_status AS ENUM (
+    'draft', 'pending', 'sent', 'paid', 'overdue', 'cancelled', 'void'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE qc_status AS ENUM (
-  'pending',
-  'in_progress',
-  'passed',
-  'warning',
-  'failed',
-  'override_approved'
-);
+DO $$ BEGIN
+  CREATE TYPE qc_status AS ENUM (
+    'pending', 'in_progress', 'passed', 'warning', 'failed', 'override_approved'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE media_type AS ENUM (
-  'photo',
-  'video',
-  'drone_photo',
-  'drone_video',
-  'matterport',
-  'floor_plan',
-  'virtual_staging',
-  'twilight',
-  'document'
-);
+DO $$ BEGIN
+  CREATE TYPE media_type AS ENUM (
+    'photo', 'video', 'drone_photo', 'drone_video', 'matterport',
+    'floor_plan', 'virtual_staging', 'twilight', 'document'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE equipment_status AS ENUM (
-  'available',
-  'assigned',
-  'in_use',
-  'maintenance',
-  'retired'
-);
+DO $$ BEGIN
+  CREATE TYPE equipment_status AS ENUM (
+    'available', 'assigned', 'in_use', 'maintenance', 'retired'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE message_channel AS ENUM (
-  'in_app',
-  'sms',
-  'email',
-  'push'
-);
+DO $$ BEGIN
+  CREATE TYPE message_channel AS ENUM ('in_app', 'sms', 'email', 'push');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE task_priority AS ENUM (
-  'low',
-  'medium',
-  'high',
-  'urgent'
-);
+DO $$ BEGIN
+  CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE task_status AS ENUM (
-  'pending',
-  'in_progress',
-  'completed',
-  'cancelled'
-);
+DO $$ BEGIN
+  CREATE TYPE task_status AS ENUM ('pending', 'in_progress', 'completed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE availability_type AS ENUM (
-  'available',
-  'unavailable',
-  'tentative',
-  'time_off',
-  'holiday'
-);
+DO $$ BEGIN
+  CREATE TYPE availability_type AS ENUM (
+    'available', 'unavailable', 'tentative', 'time_off', 'holiday'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE referral_status AS ENUM (
-  'pending',
-  'qualified',
-  'converted',
-  'expired',
-  'rejected'
-);
+DO $$ BEGIN
+  CREATE TYPE referral_status AS ENUM (
+    'pending', 'qualified', 'converted', 'expired', 'rejected'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE discount_type AS ENUM (
-  'percentage',
-  'fixed_amount',
-  'free_product'
-);
+DO $$ BEGIN
+  CREATE TYPE discount_type AS ENUM ('percentage', 'fixed_amount', 'free_product');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE payroll_status AS ENUM (
-  'pending',
-  'approved',
-  'processing',
-  'paid',
-  'rejected'
-);
+DO $$ BEGIN
+  CREATE TYPE payroll_status AS ENUM (
+    'pending', 'approved', 'processing', 'paid', 'rejected'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE commission_type AS ENUM (
-  'percentage',
-  'flat_rate',
-  'tiered'
-);
+DO $$ BEGIN
+  CREATE TYPE commission_type AS ENUM ('percentage', 'flat_rate', 'tiered');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- =====================================================
 -- CORE TENANT TABLES
 -- =====================================================
 
 -- Companies (top-level tenant)
-CREATE TABLE companies (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS companies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(100) UNIQUE NOT NULL,
@@ -210,7 +170,7 @@ CREATE TABLE companies (
 );
 
 -- Markets (city/region within a company)
-CREATE TABLE markets (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS markets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -262,7 +222,7 @@ CREATE TABLE markets (
 -- =====================================================
 
 -- Users (extends Supabase auth.users)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
   
@@ -299,7 +259,7 @@ CREATE TABLE users (
 );
 
 -- User roles (many-to-many for flexible role assignment)
-CREATE TABLE user_roles (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS user_roles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
@@ -319,7 +279,7 @@ CREATE TABLE user_roles (
 );
 
 -- Permissions (granular access control)
-CREATE TABLE permissions (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS permissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   code VARCHAR(100) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -329,7 +289,7 @@ CREATE TABLE permissions (
 );
 
 -- Role permissions mapping
-CREATE TABLE role_permissions (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS role_permissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   role user_role NOT NULL,
   permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
@@ -338,7 +298,7 @@ CREATE TABLE role_permissions (
 );
 
 -- User-specific permission overrides
-CREATE TABLE user_permissions (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS user_permissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
@@ -353,7 +313,7 @@ CREATE TABLE user_permissions (
 -- =====================================================
 
 -- Customers (property managers, agents, brokers)
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS customers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -419,7 +379,7 @@ CREATE TABLE customers (
 );
 
 -- Customer contacts (additional contacts for a customer account)
-CREATE TABLE customer_contacts (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS customer_contacts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
   
@@ -439,7 +399,7 @@ CREATE TABLE customer_contacts (
 -- =====================================================
 
 -- Photographers (service providers)
-CREATE TABLE photographers (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS photographers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -511,7 +471,7 @@ CREATE TABLE photographers (
 );
 
 -- Photographer market assignments
-CREATE TABLE photographer_markets (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS photographer_markets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   photographer_id UUID NOT NULL REFERENCES photographers(id) ON DELETE CASCADE,
   market_id UUID NOT NULL REFERENCES markets(id) ON DELETE CASCADE,
@@ -529,7 +489,7 @@ CREATE TABLE photographer_markets (
 -- =====================================================
 
 -- Product categories
-CREATE TABLE product_categories (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS product_categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -548,7 +508,7 @@ CREATE TABLE product_categories (
 );
 
 -- Products/Services
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   category_id UUID REFERENCES product_categories(id) ON DELETE SET NULL,
@@ -610,7 +570,7 @@ CREATE TABLE products (
 );
 
 -- Product bundles
-CREATE TABLE product_bundles (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS product_bundles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -638,7 +598,7 @@ CREATE TABLE product_bundles (
 );
 
 -- Bundle items
-CREATE TABLE bundle_items (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS bundle_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   bundle_id UUID NOT NULL REFERENCES product_bundles(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -651,7 +611,7 @@ CREATE TABLE bundle_items (
 );
 
 -- Market-specific pricing overrides
-CREATE TABLE market_pricing (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS market_pricing (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   market_id UUID NOT NULL REFERENCES markets(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -672,41 +632,41 @@ CREATE TABLE market_pricing (
 -- =====================================================
 
 -- Companies
-CREATE INDEX idx_companies_slug ON companies(slug);
-CREATE INDEX idx_companies_stripe ON companies(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_companies_slug ON companies(slug);
+CREATE INDEX IF NOT EXISTS idx_companies_stripe ON companies(stripe_customer_id);
 
 -- Markets
-CREATE INDEX idx_markets_company ON markets(company_id);
-CREATE INDEX idx_markets_slug ON markets(company_id, slug);
-CREATE INDEX idx_markets_timezone ON markets(timezone);
+CREATE INDEX IF NOT EXISTS idx_markets_company ON markets(company_id);
+CREATE INDEX IF NOT EXISTS idx_markets_slug ON markets(company_id, slug);
+CREATE INDEX IF NOT EXISTS idx_markets_timezone ON markets(timezone);
 
 -- Users
-CREATE INDEX idx_users_company ON users(company_id);
-CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- User roles
-CREATE INDEX idx_user_roles_user ON user_roles(user_id);
-CREATE INDEX idx_user_roles_company ON user_roles(company_id);
-CREATE INDEX idx_user_roles_market ON user_roles(market_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_company ON user_roles(company_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_market ON user_roles(market_id);
 
 -- Customers
-CREATE INDEX idx_customers_company ON customers(company_id);
-CREATE INDEX idx_customers_email ON customers(company_id, email);
-CREATE INDEX idx_customers_market ON customers(primary_market_id);
-CREATE INDEX idx_customers_sales_rep ON customers(assigned_sales_rep_id);
-CREATE INDEX idx_customers_stripe ON customers(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company_id);
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(company_id, email);
+CREATE INDEX IF NOT EXISTS idx_customers_market ON customers(primary_market_id);
+CREATE INDEX IF NOT EXISTS idx_customers_sales_rep ON customers(assigned_sales_rep_id);
+CREATE INDEX IF NOT EXISTS idx_customers_stripe ON customers(stripe_customer_id);
 
 -- Photographers
-CREATE INDEX idx_photographers_company ON photographers(company_id);
-CREATE INDEX idx_photographers_user ON photographers(user_id);
-CREATE INDEX idx_photographers_market ON photographers(primary_market_id);
-CREATE INDEX idx_photographers_active ON photographers(company_id, is_active, is_available);
+CREATE INDEX IF NOT EXISTS idx_photographers_company ON photographers(company_id);
+CREATE INDEX IF NOT EXISTS idx_photographers_user ON photographers(user_id);
+CREATE INDEX IF NOT EXISTS idx_photographers_market ON photographers(primary_market_id);
+CREATE INDEX IF NOT EXISTS idx_photographers_active ON photographers(company_id, is_active, is_available);
 
 -- Products
-CREATE INDEX idx_products_company ON products(company_id);
-CREATE INDEX idx_products_category ON products(category_id);
-CREATE INDEX idx_products_slug ON products(company_id, slug);
-CREATE INDEX idx_products_active ON products(company_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_products_company ON products(company_id);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_slug ON products(company_id, slug);
+CREATE INDEX IF NOT EXISTS idx_products_active ON products(company_id, is_active);
 
 -- =====================================================
 -- TRIGGERS
