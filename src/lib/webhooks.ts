@@ -40,7 +40,7 @@ export async function dispatchWebhook(
   event: string,
   data: Record<string, any>
 ): Promise<void> {
-  const supabase = await createAdminClient();
+  const supabase = createAdminClient();
 
   // Get all active webhooks for this event
   const { data: webhooks, error } = await supabase
@@ -147,7 +147,7 @@ async function logWebhookDelivery(
   event: string,
   result: WebhookDeliveryResult
 ): Promise<void> {
-  const supabase = await createAdminClient();
+  const supabase = createAdminClient();
 
   await supabase.from('webhook_deliveries').insert({
     webhook_id: webhookId,

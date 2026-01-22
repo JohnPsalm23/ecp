@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = await createAdminClient();
+  const supabase = createAdminClient();
 
   try {
     // Get all companies

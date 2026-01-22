@@ -30,7 +30,7 @@ export async function withTransaction<T>(
     timeout?: number;
   } = {}
 ): Promise<TransactionResult<T>> {
-  const client = await createAdminClient();
+  const client = createAdminClient();
   const endTimer = logger.time('database_transaction');
   
   try {
@@ -70,7 +70,7 @@ export async function withIdempotency<T>(
   operation: () => Promise<T>,
   options: { ttlSeconds?: number } = {}
 ): Promise<T> {
-  const client = await createAdminClient();
+  const client = createAdminClient();
   const ttl = options.ttlSeconds || 86400; // 24 hours default
 
   // Check if operation already completed

@@ -100,7 +100,7 @@ export interface AuditLogEntry {
  */
 export async function audit(entry: AuditLogEntry): Promise<void> {
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     
     // Mask sensitive data before logging
     const sanitizedEntry = {
@@ -285,7 +285,7 @@ export async function queryAuditLogs(filters: {
   limit?: number;
   offset?: number;
 }): Promise<any[]> {
-  const supabase = await createAdminClient();
+  const supabase = createAdminClient();
   
   let query = supabase
     .from('audit_logs')

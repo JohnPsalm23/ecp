@@ -34,7 +34,7 @@ async function checkDatabase(): Promise<CheckResult> {
   const start = performance.now();
   
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const { error } = await supabase.from('companies').select('id').limit(1);
     
     if (error) {
@@ -57,7 +57,7 @@ async function checkStorage(): Promise<CheckResult> {
   const start = performance.now();
   
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     const { error } = await supabase.storage.listBuckets();
     
     if (error) {
@@ -80,7 +80,7 @@ async function checkAuth(): Promise<CheckResult> {
   const start = performance.now();
   
   try {
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
     // Simple auth check - just verify the client can be created
     const { data } = await supabase.auth.getSession();
     
