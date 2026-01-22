@@ -7,6 +7,9 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { logger } from './logger';
 import { maskSensitiveData } from './security';
+import type { Database } from '@/types/database.types';
+
+type AuditLogInsert = Database['public']['Tables']['audit_logs']['Insert'];
 
 export enum AuditAction {
   // Authentication
@@ -110,18 +113,20 @@ export async function audit(entry: AuditLogEntry): Promise<void> {
     const sanitizedMetadata = entry.metadata ? maskSensitiveData(entry.metadata) : undefined;
 
     // Map interface fields to database columns
-    const { error } = await supabase.from('audit_logs').insert({
-      action: entry.action,
+    const insertData: AuditLogInsert = {
+      action: entry.action as string,
       actor_type: entry.actor_type,
-      user_id: entry.actor_id,                    // actor_id -> user_id
-      entity_type: entry.resource_type,           // resource_type -> entity_type
-      entity_id: entry.resource_id,               // resource_id -> entity_id
+      user_id: entry.actor_id,
+      entity_type: entry.resource_type,
+      entity_id: entry.resource_id,
       company_id: entry.company_id,
-      changes: sanitizedChanges as Record<string, unknown> | null,
-      metadata: sanitizedMetadata as Record<string, unknown> | null,
+      changes: sanitizedChanges,
+      metadata: sanitizedMetadata,
       user_agent: entry.user_agent,
       request_id: entry.request_id,
-    });
+    };
+
+    const { error } = await supabase.from('audit_logs').insert(insertData);
 
     if (error) {
       // Don't throw - audit logging should not break main operations
