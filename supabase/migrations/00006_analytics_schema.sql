@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS dashboard_widgets (
 -- =====================================================
 
 -- Daily order metrics by market
+DROP MATERIALIZED VIEW IF EXISTS mv_daily_order_metrics;
 CREATE MATERIALIZED VIEW mv_daily_order_metrics AS
 SELECT
   o.company_id,
@@ -141,6 +142,7 @@ GROUP BY o.company_id, o.market_id, DATE(o.created_at AT TIME ZONE m.timezone), 
 CREATE UNIQUE INDEX IF NOT EXISTS ON mv_daily_order_metrics (company_id, market_id, date);
 
 -- Photographer performance metrics
+DROP MATERIALIZED VIEW IF EXISTS mv_photographer_performance;
 CREATE MATERIALIZED VIEW mv_photographer_performance AS
 SELECT
   p.company_id,
@@ -172,6 +174,7 @@ GROUP BY p.company_id, p.id, p.user_id;
 CREATE UNIQUE INDEX IF NOT EXISTS ON mv_photographer_performance (company_id, photographer_id);
 
 -- Customer lifetime value
+DROP MATERIALIZED VIEW IF EXISTS mv_customer_ltv;
 CREATE MATERIALIZED VIEW mv_customer_ltv AS
 SELECT
   c.company_id,
@@ -193,6 +196,7 @@ GROUP BY c.company_id, c.id;
 CREATE UNIQUE INDEX IF NOT EXISTS ON mv_customer_ltv (company_id, customer_id);
 
 -- Product performance
+DROP MATERIALIZED VIEW IF EXISTS mv_product_performance;
 CREATE MATERIALIZED VIEW mv_product_performance AS
 SELECT
   p.company_id,
@@ -215,6 +219,7 @@ GROUP BY p.company_id, p.id, p.name, p.category_id;
 CREATE UNIQUE INDEX IF NOT EXISTS ON mv_product_performance (company_id, product_id);
 
 -- QC trends
+DROP MATERIALIZED VIEW IF EXISTS mv_qc_trends;
 CREATE MATERIALIZED VIEW mv_qc_trends AS
 WITH job_stats AS (
   SELECT
@@ -263,6 +268,7 @@ LEFT JOIN issue_stats iss ON js.company_id = iss.company_id AND js.week = iss.we
 CREATE UNIQUE INDEX IF NOT EXISTS ON mv_qc_trends (company_id, week);
 
 -- Sales rep performance
+DROP MATERIALIZED VIEW IF EXISTS mv_sales_performance;
 CREATE MATERIALIZED VIEW mv_sales_performance AS
 SELECT
   o.company_id,
