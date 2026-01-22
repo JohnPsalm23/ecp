@@ -58,14 +58,14 @@ BEGIN
 END $$;
 
 -- Create index for enabled webhooks
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_webhooks_enabled ON webhooks(company_id, is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_webhooks_enabled ON webhooks(company_id, is_active) WHERE is_active = true;
 
 -- =====================================================
 -- API KEYS TABLE
 -- For external API access
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS api_keys (
+CREATE TABLE IF NOT EXISTS api_keys (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -82,9 +82,9 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS api_keys (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_api_keys_company ON api_keys(company_id);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
+CREATE INDEX IF NOT EXISTS idx_api_keys_company ON api_keys(company_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
 
 -- Trigger for updated_at
 DROP TRIGGER IF EXISTS update_api_keys_updated_at ON api_keys;

@@ -126,7 +126,7 @@ END $$;
 -- =====================================================
 
 -- Companies (top-level tenant)
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS companies (
+CREATE TABLE IF NOT EXISTS companies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(100) UNIQUE NOT NULL,
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS companies (
 );
 
 -- Markets (city/region within a company)
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS markets (
+CREATE TABLE IF NOT EXISTS markets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS markets (
 -- =====================================================
 
 -- Users (extends Supabase auth.users)
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
   
@@ -259,7 +259,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS users (
 );
 
 -- User roles (many-to-many for flexible role assignment)
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS user_roles (
+CREATE TABLE IF NOT EXISTS user_roles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS user_roles (
 );
 
 -- Permissions (granular access control)
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS permissions (
+CREATE TABLE IF NOT EXISTS permissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   code VARCHAR(100) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS permissions (
 );
 
 -- Role permissions mapping
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS role_permissions (
+CREATE TABLE IF NOT EXISTS role_permissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   role user_role NOT NULL,
   permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
@@ -298,7 +298,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS role_permissions (
 );
 
 -- User-specific permission overrides
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS user_permissions (
+CREATE TABLE IF NOT EXISTS user_permissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
@@ -313,7 +313,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS user_permissions (
 -- =====================================================
 
 -- Customers (property managers, agents, brokers)
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS customers (
+CREATE TABLE IF NOT EXISTS customers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -379,7 +379,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS customers (
 );
 
 -- Customer contacts (additional contacts for a customer account)
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS customer_contacts (
+CREATE TABLE IF NOT EXISTS customer_contacts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
   
@@ -399,7 +399,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS customer_contacts (
 -- =====================================================
 
 -- Photographers (service providers)
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS photographers (
+CREATE TABLE IF NOT EXISTS photographers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -471,7 +471,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS photographers (
 );
 
 -- Photographer market assignments
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS photographer_markets (
+CREATE TABLE IF NOT EXISTS photographer_markets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   photographer_id UUID NOT NULL REFERENCES photographers(id) ON DELETE CASCADE,
   market_id UUID NOT NULL REFERENCES markets(id) ON DELETE CASCADE,
@@ -489,7 +489,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS photographer_markets (
 -- =====================================================
 
 -- Product categories
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS product_categories (
+CREATE TABLE IF NOT EXISTS product_categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -508,7 +508,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS product_categories (
 );
 
 -- Products/Services
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   category_id UUID REFERENCES product_categories(id) ON DELETE SET NULL,
@@ -570,7 +570,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS products (
 );
 
 -- Product bundles
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS product_bundles (
+CREATE TABLE IF NOT EXISTS product_bundles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   
@@ -598,7 +598,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS product_bundles (
 );
 
 -- Bundle items
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS bundle_items (
+CREATE TABLE IF NOT EXISTS bundle_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   bundle_id UUID NOT NULL REFERENCES product_bundles(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -611,7 +611,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS bundle_items (
 );
 
 -- Market-specific pricing overrides
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS market_pricing (
+CREATE TABLE IF NOT EXISTS market_pricing (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   market_id UUID NOT NULL REFERENCES markets(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
