@@ -1,104 +1,71 @@
 -- =====================================================
--- WEBHOOKS TABLE
--- Stores webhook configurations for external integrations
+-- WEBHOOKS ENHANCEMENTS
+-- Additional columns and API keys table
+-- Note: Base webhooks table is created in 00005_operations_schema.sql
 -- =====================================================
 
-CREATE TABLE webhooks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  name VARCHAR(255) NOT NULL,
-  url TEXT NOT NULL,
-  secret VARCHAR(255) NOT NULL,
-  events TEXT[] NOT NULL,
-  enabled BOOLEAN DEFAULT true,
-  headers JSONB,
-  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Add additional columns to webhooks if they don't exist
+DO $$ 
+BEGIN
+  -- Add secret column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'webhooks' AND column_name = 'secret'
+  ) THEN
+    ALTER TABLE webhooks ADD COLUMN secret VARCHAR(255);
+  END IF;
 
--- Index for lookup
-CREATE INDEX idx_webhooks_company ON webhooks(company_id);
-CREATE INDEX idx_webhooks_enabled ON webhooks(company_id, enabled) WHERE enabled = true;
+  -- Add enabled column if it doesn't exist (might be named is_active)
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'webhooks' AND column_name = 'enabled'
+  ) THEN
+    ALTER TABLE webhooks ADD COLUMN enabled BOOLEAN DEFAULT true;
+  END IF;
 
--- Trigger for updated_at
-CREATE TRIGGER update_webhooks_updated_at BEFORE UPDATE ON webhooks
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  -- Add created_by column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'webhooks' AND column_name = 'created_by'
+  ) THEN
+    ALTER TABLE webhooks ADD COLUMN created_by UUID REFERENCES users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
--- =====================================================
--- WEBHOOK DELIVERIES TABLE
--- Logs all webhook delivery attempts for debugging
--- =====================================================
+-- Add additional columns to webhook_deliveries if table exists
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'webhook_deliveries' AND column_name = 'success'
+  ) THEN
+    ALTER TABLE webhook_deliveries ADD COLUMN success BOOLEAN;
+  END IF;
 
-CREATE TABLE webhook_deliveries (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  webhook_id UUID NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
-  event VARCHAR(100) NOT NULL,
-  success BOOLEAN NOT NULL,
-  status_code INTEGER,
-  response_time_ms INTEGER,
-  error_message TEXT,
-  request_payload JSONB,
-  response_body TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'webhook_deliveries' AND column_name = 'error_message'
+  ) THEN
+    ALTER TABLE webhook_deliveries ADD COLUMN error_message TEXT;
+  END IF;
 
--- Index for querying delivery history
-CREATE INDEX idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id);
-CREATE INDEX idx_webhook_deliveries_created ON webhook_deliveries(created_at DESC);
-CREATE INDEX idx_webhook_deliveries_status ON webhook_deliveries(webhook_id, success);
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'webhook_deliveries' AND column_name = 'request_payload'
+  ) THEN
+    ALTER TABLE webhook_deliveries ADD COLUMN request_payload JSONB;
+  END IF;
+END $$;
 
--- RLS
-ALTER TABLE webhooks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE webhook_deliveries ENABLE ROW LEVEL SECURITY;
-
--- Webhook policies
-CREATE POLICY webhooks_company_access ON webhooks
-  FOR ALL
-  USING (
-    company_id IN (
-      SELECT company_id FROM users WHERE id = auth.uid()
-    )
-  )
-  WITH CHECK (
-    company_id IN (
-      SELECT company_id FROM users WHERE id = auth.uid()
-    )
-    AND EXISTS (
-      SELECT 1 FROM user_roles ur
-      JOIN roles r ON ur.role_id = r.id
-      WHERE ur.user_id = auth.uid()
-      AND r.name IN ('admin', 'owner', 'super_admin')
-    )
-  );
-
--- Webhook deliveries policies
-CREATE POLICY webhook_deliveries_view ON webhook_deliveries
-  FOR SELECT
-  USING (
-    webhook_id IN (
-      SELECT id FROM webhooks WHERE company_id IN (
-        SELECT company_id FROM users WHERE id = auth.uid()
-      )
-    )
-  );
-
--- Service role can insert deliveries
-CREATE POLICY webhook_deliveries_insert ON webhook_deliveries
-  FOR INSERT
-  WITH CHECK (true);
-
--- Grants
-GRANT ALL ON webhooks TO authenticated;
-GRANT SELECT, INSERT ON webhook_deliveries TO authenticated;
-GRANT ALL ON webhook_deliveries TO service_role;
+-- Create index for enabled webhooks
+CREATE INDEX IF NOT EXISTS idx_webhooks_enabled ON webhooks(company_id, is_active) WHERE is_active = true;
 
 -- =====================================================
 -- API KEYS TABLE
 -- For external API access
 -- =====================================================
 
-CREATE TABLE api_keys (
+CREATE TABLE IF NOT EXISTS api_keys (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -115,17 +82,20 @@ CREATE TABLE api_keys (
 );
 
 -- Indexes
-CREATE INDEX idx_api_keys_company ON api_keys(company_id);
-CREATE INDEX idx_api_keys_hash ON api_keys(key_hash);
-CREATE INDEX idx_api_keys_prefix ON api_keys(key_prefix);
+CREATE INDEX IF NOT EXISTS idx_api_keys_company ON api_keys(company_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
 
 -- Trigger for updated_at
+DROP TRIGGER IF EXISTS update_api_keys_updated_at ON api_keys;
 CREATE TRIGGER update_api_keys_updated_at BEFORE UPDATE ON api_keys
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- RLS
 ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policy if exists and recreate
+DROP POLICY IF EXISTS api_keys_company_access ON api_keys;
 CREATE POLICY api_keys_company_access ON api_keys
   FOR ALL
   USING (
@@ -139,9 +109,8 @@ CREATE POLICY api_keys_company_access ON api_keys
     )
     AND EXISTS (
       SELECT 1 FROM user_roles ur
-      JOIN roles r ON ur.role_id = r.id
       WHERE ur.user_id = auth.uid()
-      AND r.name IN ('admin', 'owner', 'super_admin')
+      AND ur.role IN ('super_admin', 'company_admin')
     )
   );
 

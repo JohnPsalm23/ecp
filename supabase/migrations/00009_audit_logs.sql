@@ -1,69 +1,31 @@
 -- =====================================================
--- AUDIT LOGS TABLE
--- Comprehensive audit trail for compliance and debugging
+-- AUDIT LOGS ENHANCEMENTS
+-- Additional columns and policies for the audit_logs table
+-- Note: Base audit_logs table is created in 00005_operations_schema.sql
 -- =====================================================
 
-CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  action VARCHAR(100) NOT NULL,
-  actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  actor_type VARCHAR(20) NOT NULL DEFAULT 'user', -- 'user', 'system', 'api', 'webhook'
-  resource_type VARCHAR(50) NOT NULL,
-  resource_id UUID,
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  changes JSONB,
-  metadata JSONB,
-  ip_address INET,
-  user_agent TEXT,
-  request_id VARCHAR(100),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Add additional columns if they don't exist
+DO $$ 
+BEGIN
+  -- Add actor_type column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'audit_logs' AND column_name = 'actor_type'
+  ) THEN
+    ALTER TABLE audit_logs ADD COLUMN actor_type VARCHAR(20) DEFAULT 'user';
+  END IF;
 
--- Indexes for common queries
-CREATE INDEX idx_audit_logs_company ON audit_logs(company_id);
-CREATE INDEX idx_audit_logs_actor ON audit_logs(actor_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
+  -- Add changes column if it doesn't exist  
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'audit_logs' AND column_name = 'changes'
+  ) THEN
+    ALTER TABLE audit_logs ADD COLUMN changes JSONB;
+  END IF;
+END $$;
 
--- Composite index for filtering by company and date
-CREATE INDEX idx_audit_logs_company_date ON audit_logs(company_id, created_at DESC);
-
--- RLS
-ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-
--- Only admins can view audit logs for their company
-CREATE POLICY audit_logs_view ON audit_logs
-  FOR SELECT
-  USING (
-    company_id IN (
-      SELECT company_id FROM users WHERE id = auth.uid()
-    )
-    AND EXISTS (
-      SELECT 1 FROM user_roles ur
-      JOIN roles r ON ur.role_id = r.id
-      WHERE ur.user_id = auth.uid()
-      AND r.name IN ('admin', 'owner', 'super_admin')
-    )
-  );
-
--- Only service role can insert audit logs
-CREATE POLICY audit_logs_insert ON audit_logs
-  FOR INSERT
-  WITH CHECK (true);
-
--- Prevent updates and deletes
-CREATE POLICY audit_logs_no_update ON audit_logs
-  FOR UPDATE
-  USING (false);
-
-CREATE POLICY audit_logs_no_delete ON audit_logs
-  FOR DELETE
-  USING (false);
-
--- Grant access
-GRANT SELECT ON audit_logs TO authenticated;
-GRANT INSERT ON audit_logs TO service_role;
+-- Additional index for company + date filtering
+CREATE INDEX IF NOT EXISTS idx_audit_logs_company_date ON audit_logs(company_id, created_at DESC);
 
 -- =====================================================
 -- RETENTION POLICY
@@ -79,5 +41,76 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Schedule cleanup (run monthly)
--- Note: Actual scheduling done via Supabase Dashboard or cron job
+-- =====================================================
+-- IDEMPOTENCY KEYS TABLE
+-- Prevents duplicate operations for API requests
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key VARCHAR(255) UNIQUE NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'processing', -- 'processing', 'completed', 'failed'
+  result JSONB,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for cleanup and lookup
+CREATE INDEX IF NOT EXISTS idx_idempotency_keys_key ON idempotency_keys(key);
+CREATE INDEX IF NOT EXISTS idx_idempotency_keys_expires ON idempotency_keys(expires_at);
+
+-- Auto-cleanup expired keys
+CREATE OR REPLACE FUNCTION cleanup_expired_idempotency_keys()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM idempotency_keys WHERE expires_at < NOW();
+END;
+$$ LANGUAGE plpgsql;
+
+-- RLS
+ALTER TABLE idempotency_keys ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policy if it exists and recreate
+DROP POLICY IF EXISTS idempotency_keys_service_only ON idempotency_keys;
+CREATE POLICY idempotency_keys_service_only ON idempotency_keys
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Grant access to service role
+GRANT ALL ON idempotency_keys TO service_role;
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS update_idempotency_keys_updated_at ON idempotency_keys;
+CREATE TRIGGER update_idempotency_keys_updated_at BEFORE UPDATE ON idempotency_keys
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- TRANSACTION HELPER FUNCTIONS
+-- =====================================================
+
+-- Begin transaction with isolation level
+CREATE OR REPLACE FUNCTION begin_transaction(isolation_level TEXT DEFAULT 'read_committed')
+RETURNS void AS $$
+BEGIN
+  EXECUTE 'SET TRANSACTION ISOLATION LEVEL ' || isolation_level;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Commit transaction
+CREATE OR REPLACE FUNCTION commit_transaction()
+RETURNS void AS $$
+BEGIN
+  -- Commit is automatic in Supabase, this is a no-op for compatibility
+  RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Rollback transaction
+CREATE OR REPLACE FUNCTION rollback_transaction()
+RETURNS void AS $$
+BEGIN
+  RAISE EXCEPTION 'ROLLBACK_REQUESTED';
+END;
+$$ LANGUAGE plpgsql;
