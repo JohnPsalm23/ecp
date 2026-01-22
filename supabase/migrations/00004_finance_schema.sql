@@ -606,18 +606,23 @@ CREATE INDEX IF NOT EXISTS idx_customer_credits_active ON customer_credits(custo
 -- TRIGGERS
 -- =====================================================
 
+DROP TRIGGER IF EXISTS update_customer_invoices_updated_at ON customer_invoices;
 CREATE TRIGGER update_customer_invoices_updated_at BEFORE UPDATE ON customer_invoices
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_photographer_invoices_updated_at ON photographer_invoices;
 CREATE TRIGGER update_photographer_invoices_updated_at BEFORE UPDATE ON photographer_invoices
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_incentive_programs_updated_at ON incentive_programs;
 CREATE TRIGGER update_incentive_programs_updated_at BEFORE UPDATE ON incentive_programs
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_time_entries_updated_at ON time_entries;
 CREATE TRIGGER update_time_entries_updated_at BEFORE UPDATE ON time_entries
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_coupons_updated_at ON coupons;
 CREATE TRIGGER update_coupons_updated_at BEFORE UPDATE ON coupons
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -632,6 +637,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS coupon_usage_increment ON coupon_usage;
 CREATE TRIGGER coupon_usage_increment AFTER INSERT ON coupon_usage
   FOR EACH ROW EXECUTE FUNCTION update_coupon_usage_count();
 
@@ -649,5 +655,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS credit_transaction_update ON credit_transactions;
 CREATE TRIGGER credit_transaction_update AFTER INSERT ON credit_transactions
   FOR EACH ROW EXECUTE FUNCTION update_credit_remaining();

@@ -528,6 +528,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS order_status_change ON orders;
 CREATE TRIGGER order_status_change BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION update_order_status_timestamp();
 
@@ -546,6 +547,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS appointment_status_change ON appointments;
 CREATE TRIGGER appointment_status_change BEFORE UPDATE ON appointments
   FOR EACH ROW EXECUTE FUNCTION update_appointment_status_timestamp();
 
@@ -569,30 +571,39 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS recalc_order_totals_insert ON order_items;
 CREATE TRIGGER recalc_order_totals_insert AFTER INSERT ON order_items
   FOR EACH ROW EXECUTE FUNCTION recalculate_order_totals();
 
+DROP TRIGGER IF EXISTS recalc_order_totals_update ON order_items;
 CREATE TRIGGER recalc_order_totals_update AFTER UPDATE ON order_items
   FOR EACH ROW EXECUTE FUNCTION recalculate_order_totals();
 
+DROP TRIGGER IF EXISTS recalc_order_totals_delete ON order_items;
 CREATE TRIGGER recalc_order_totals_delete AFTER DELETE ON order_items
   FOR EACH ROW EXECUTE FUNCTION recalculate_order_totals();
 
 -- Apply updated_at triggers
+DROP TRIGGER IF EXISTS update_properties_updated_at ON properties;
 CREATE TRIGGER update_properties_updated_at BEFORE UPDATE ON properties
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_appointments_updated_at ON appointments;
 CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON appointments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_deliverables_updated_at ON deliverables;
 CREATE TRIGGER update_deliverables_updated_at BEFORE UPDATE ON deliverables
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_media_assets_updated_at ON media_assets;
 CREATE TRIGGER update_media_assets_updated_at BEFORE UPDATE ON media_assets
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_edit_requests_updated_at ON edit_requests;
 CREATE TRIGGER update_edit_requests_updated_at BEFORE UPDATE ON edit_requests
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

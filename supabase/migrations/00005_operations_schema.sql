@@ -495,23 +495,30 @@ CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON webhook_deliveries(s
 -- TRIGGERS
 -- =====================================================
 
+DROP TRIGGER IF EXISTS update_availability_blocks_updated_at ON availability_blocks;
 CREATE TRIGGER update_availability_blocks_updated_at BEFORE UPDATE ON availability_blocks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_equipment_updated_at ON equipment;
 CREATE TRIGGER update_equipment_updated_at BEFORE UPDATE ON equipment
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_message_templates_updated_at ON message_templates;
 CREATE TRIGGER update_message_templates_updated_at BEFORE UPDATE ON message_templates
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_notes_updated_at ON notes;
 CREATE TRIGGER update_notes_updated_at BEFORE UPDATE ON notes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_tasks_updated_at ON tasks;
 CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_reviews_updated_at ON reviews;
 CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_webhooks_updated_at ON webhooks;
 CREATE TRIGGER update_webhooks_updated_at BEFORE UPDATE ON webhooks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -316,8 +316,10 @@ CREATE INDEX IF NOT EXISTS idx_ai_recommendations_status ON ai_recommendations(s
 -- TRIGGERS
 -- =====================================================
 
+DROP TRIGGER IF EXISTS update_qc_jobs_updated_at ON qc_jobs;
 CREATE TRIGGER update_qc_jobs_updated_at BEFORE UPDATE ON qc_jobs
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_qc_rules_updated_at ON qc_rules;
 CREATE TRIGGER update_qc_rules_updated_at BEFORE UPDATE ON qc_rules
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

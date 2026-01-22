@@ -319,5 +319,6 @@ CREATE INDEX IF NOT EXISTS idx_dashboard_widgets_dashboard ON dashboard_widgets(
 -- TRIGGERS
 -- =====================================================
 
+DROP TRIGGER IF EXISTS update_dashboards_updated_at ON dashboards;
 CREATE TRIGGER update_dashboards_updated_at BEFORE UPDATE ON dashboards
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
