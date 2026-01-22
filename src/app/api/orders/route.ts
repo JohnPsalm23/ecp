@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import type { Database } from '@/types/database.types';
 
 type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 type OrderItemInsert = Database['public']['Tables']['order_items']['Insert'];
+type UserRow = Database['public']['Tables']['users']['Row'];
+type ProductRow = Database['public']['Tables']['products']['Row'];
 
 const createOrderSchema = z.object({
   customer_id: z.string().uuid(),
@@ -32,7 +34,7 @@ const createOrderSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminClient();
   const { searchParams } = new URL(request.url);
   
   const status = searchParams.get('status');
@@ -97,14 +99,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createServerSupabaseClient();
+  const authClient = await createServerSupabaseClient();
+  const supabase = createAdminClient();
   
   try {
     const body = await request.json();
     const validatedData = createOrderSchema.parse(body);
 
     // Get user session
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await authClient.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
