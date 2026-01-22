@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
+// Types for Supabase query results (until proper types are generated)
+interface UserProfile {
+  company_id: string;
+}
+
+interface Property {
+  id: string;
+}
+
+interface Product {
+  id: string;
+  base_price: number;
+  estimated_duration_minutes: number | null;
+}
+
+interface Order {
+  id: string;
+}
+
 const createOrderSchema = z.object({
   customer_id: z.string().uuid(),
   market_id: z.string().uuid(),
@@ -105,18 +124,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's company
-    const { data: userProfile } = await supabase
+    const { data: userProfileData } = await supabase
       .from('users')
       .select('company_id')
       .eq('id', user.id)
       .single();
 
+    const userProfile = userProfileData as UserProfile | null;
     if (!userProfile?.company_id) {
       return NextResponse.json({ error: 'User has no company' }, { status: 400 });
     }
 
     // Create property
-    const { data: property, error: propertyError } = await supabase
+    const { data: propertyData, error: propertyError } = await supabase
       .from('properties')
       .insert({
         company_id: userProfile.company_id,
@@ -130,13 +150,15 @@ export async function POST(request: NextRequest) {
         lng: validatedData.property.lng,
         formatted_address: `${validatedData.property.address_line1}, ${validatedData.property.city}, ${validatedData.property.state} ${validatedData.property.postal_code}`,
         market_id: validatedData.market_id,
-      })
+      } as Record<string, unknown>)
       .select()
       .single();
 
-    if (propertyError) {
-      return NextResponse.json({ error: propertyError.message }, { status: 500 });
+    if (propertyError || !propertyData) {
+      return NextResponse.json({ error: propertyError?.message || 'Failed to create property' }, { status: 500 });
     }
+
+    const property = propertyData as Property;
 
     // Generate order number
     const timestamp = Date.now().toString(36).toUpperCase();
@@ -144,12 +166,13 @@ export async function POST(request: NextRequest) {
     const order_number = `ORD-${timestamp}${random}`;
 
     // Get products for pricing
-    const { data: products } = await supabase
+    const { data: productsData } = await supabase
       .from('products')
       .select('id, base_price, estimated_duration_minutes')
       .in('id', validatedData.products.map(p => p.product_id));
 
-    const productMap = new Map(products?.map(p => [p.id, p]));
+    const products = (productsData as Product[] | null) || [];
+    const productMap = new Map(products.map(p => [p.id, p]));
 
     // Calculate totals
     let subtotal = 0;
@@ -172,7 +195,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create order
-    const { data: order, error: orderError } = await supabase
+    const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .insert({
         company_id: userProfile.company_id,
@@ -191,13 +214,15 @@ export async function POST(request: NextRequest) {
         customer_notes: validatedData.customer_notes,
         created_by: user.id,
         source: 'api',
-      })
+      } as Record<string, unknown>)
       .select()
       .single();
 
-    if (orderError) {
-      return NextResponse.json({ error: orderError.message }, { status: 500 });
+    if (orderError || !orderData) {
+      return NextResponse.json({ error: orderError?.message || 'Failed to create order' }, { status: 500 });
     }
+
+    const order = orderData as Order;
 
     // Create order items
     const { error: itemsError } = await supabase
@@ -206,7 +231,7 @@ export async function POST(request: NextRequest) {
         order_id: order.id,
         ...item,
         product_name: 'Product', // Would fetch actual name
-      })));
+      }) as Record<string, unknown>));
 
     if (itemsError) {
       console.error('Failed to create order items:', itemsError);
