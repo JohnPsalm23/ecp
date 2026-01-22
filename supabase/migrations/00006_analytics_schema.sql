@@ -216,26 +216,44 @@ CREATE UNIQUE INDEX ON mv_product_performance (company_id, product_id);
 
 -- QC trends
 CREATE MATERIALIZED VIEW mv_qc_trends AS
+WITH job_stats AS (
+  SELECT
+    qj.company_id,
+    DATE_TRUNC('week', qj.created_at) AS week,
+    COUNT(DISTINCT qj.id) AS total_jobs,
+    COUNT(DISTINCT CASE WHEN qj.status = 'passed' THEN qj.id END) AS passed_jobs,
+    COUNT(DISTINCT CASE WHEN qj.status = 'failed' THEN qj.id END) AS failed_jobs,
+    AVG(qj.overall_score) AS avg_score
+  FROM qc_jobs qj
+  GROUP BY qj.company_id, DATE_TRUNC('week', qj.created_at)
+),
+issue_stats AS (
+  SELECT
+    qj.company_id,
+    DATE_TRUNC('week', qj.created_at) AS week,
+    COUNT(qi.id) AS total_issues,
+    jsonb_object_agg(qi.issue_type, qi.issue_count) AS issue_breakdown
+  FROM qc_jobs qj
+  JOIN qc_results qr ON qj.id = qr.qc_job_id
+  JOIN (
+    SELECT qc_result_id, issue_type, COUNT(*) AS issue_count
+    FROM qc_issues
+    GROUP BY qc_result_id, issue_type
+  ) qi ON qr.id = qi.qc_result_id
+  GROUP BY qj.company_id, DATE_TRUNC('week', qj.created_at)
+)
 SELECT
-  qj.company_id,
-  DATE_TRUNC('week', qj.created_at) AS week,
-  COUNT(DISTINCT qj.id) AS total_jobs,
-  COUNT(DISTINCT CASE WHEN qj.status = 'passed' THEN qj.id END) AS passed_jobs,
-  COUNT(DISTINCT CASE WHEN qj.status = 'failed' THEN qj.id END) AS failed_jobs,
-  ROUND(
-    COUNT(DISTINCT CASE WHEN qj.status = 'passed' THEN qj.id END)::DECIMAL / 
-    NULLIF(COUNT(DISTINCT qj.id), 0) * 100, 2
-  ) AS pass_rate,
-  AVG(qj.overall_score) AS avg_score,
-  COUNT(DISTINCT qi.id) AS total_issues,
-  jsonb_object_agg(
-    COALESCE(qi.issue_type, 'none'), 
-    COUNT(qi.id)
-  ) FILTER (WHERE qi.issue_type IS NOT NULL) AS issue_breakdown
-FROM qc_jobs qj
-LEFT JOIN qc_results qr ON qj.id = qr.qc_job_id
-LEFT JOIN qc_issues qi ON qr.id = qi.qc_result_id
-GROUP BY qj.company_id, DATE_TRUNC('week', qj.created_at);
+  js.company_id,
+  js.week,
+  js.total_jobs,
+  js.passed_jobs,
+  js.failed_jobs,
+  ROUND(js.passed_jobs::DECIMAL / NULLIF(js.total_jobs, 0) * 100, 2) AS pass_rate,
+  js.avg_score,
+  COALESCE(iss.total_issues, 0) AS total_issues,
+  COALESCE(iss.issue_breakdown, '{}'::jsonb) AS issue_breakdown
+FROM job_stats js
+LEFT JOIN issue_stats iss ON js.company_id = iss.company_id AND js.week = iss.week;
 
 CREATE UNIQUE INDEX ON mv_qc_trends (company_id, week);
 
