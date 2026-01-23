@@ -74,7 +74,7 @@ export function createAction<TInput, TOutput>(config: {
           .select('role')
           .eq('user_id', user.id);
 
-        const roles = (userRoles || []).map((r) => r.role).filter(Boolean);
+        const roles = (userRoles || []).map((r) => r.role).filter(Boolean) as string[];
         const hasRole = config.requireRoles.some(role => roles.includes(role));
 
         if (!hasRole) {
