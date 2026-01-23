@@ -10,6 +10,9 @@ import {
 import { useRouter } from 'next/navigation';
 import type { User, Session } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import type { Database } from '@/types/database.types';
+
+type UserInsert = Database['public']['Tables']['users']['Insert'];
 
 interface UserProfile {
   id: string;
@@ -186,12 +189,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!error && data.user) {
       // Create user profile
-      await supabase.from('users').insert({
+      const userInsert: UserInsert = {
         id: data.user.id,
         email,
         first_name: metadata.first_name,
         last_name: metadata.last_name,
-      });
+        display_name: `${metadata.first_name} ${metadata.last_name}`,
+      };
+      await supabase.from('users').insert(userInsert);
     }
 
     return { error };
