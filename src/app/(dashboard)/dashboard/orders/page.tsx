@@ -1,103 +1,18 @@
-'use client';
-
-import { useState } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import {
   Plus,
   Search,
-  Filter,
   Download,
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash2,
   MapPin,
   Calendar,
-  Clock,
   User,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn, formatCurrency, formatDate, getOrderStatusColor } from '@/lib/utils';
-
-// Mock data - in real app would come from Supabase
-const orders = [
-  {
-    id: '1',
-    order_number: 'ORD-001234',
-    customer: { name: 'John Smith', email: 'john@realty.com' },
-    property: { address: '123 Main St, Atlanta, GA 30301' },
-    status: 'scheduled',
-    total: 450,
-    preferred_date: '2026-01-22',
-    preferred_time: '10:00 AM',
-    photographer: { name: 'Alex Rivera' },
-    products: ['Premium Photos', 'Drone Package'],
-    created_at: '2026-01-20T10:30:00Z',
-  },
-  {
-    id: '2',
-    order_number: 'ORD-001235',
-    customer: { name: 'Sarah Johnson', email: 'sarah@properties.com' },
-    property: { address: '456 Oak Ave, Dallas, TX 75201' },
-    status: 'in_progress',
-    total: 650,
-    preferred_date: '2026-01-22',
-    preferred_time: '11:30 AM',
-    photographer: { name: 'Jamie Chen' },
-    products: ['Premium Photos', 'Video Tour', 'Floor Plan'],
-    created_at: '2026-01-19T14:00:00Z',
-  },
-  {
-    id: '3',
-    order_number: 'ORD-001236',
-    customer: { name: 'Mike Williams', email: 'mike@homes.com' },
-    property: { address: '789 Pine Rd, Miami, FL 33101' },
-    status: 'qc_pending',
-    total: 375,
-    preferred_date: '2026-01-21',
-    preferred_time: '2:00 PM',
-    photographer: { name: 'Sam Wilson' },
-    products: ['Standard Photos', 'Twilight'],
-    created_at: '2026-01-18T09:15:00Z',
-  },
-  {
-    id: '4',
-    order_number: 'ORD-001237',
-    customer: { name: 'Emily Brown', email: 'emily@luxuryrealty.com' },
-    property: { address: '321 Elm St, Atlanta, GA 30302' },
-    status: 'delivered',
-    total: 850,
-    preferred_date: '2026-01-20',
-    preferred_time: '9:00 AM',
-    photographer: { name: 'Alex Rivera' },
-    products: ['Premium Photos', 'Drone Package', 'Video Tour', 'Matterport'],
-    created_at: '2026-01-17T16:45:00Z',
-  },
-  {
-    id: '5',
-    order_number: 'ORD-001238',
-    customer: { name: 'David Lee', email: 'david@premier.com' },
-    property: { address: '654 Maple Dr, Dallas, TX 75202' },
-    status: 'qc_failed',
-    total: 550,
-    preferred_date: '2026-01-21',
-    preferred_time: '3:30 PM',
-    photographer: { name: 'Jamie Chen' },
-    products: ['Premium Photos', 'Drone Package'],
-    created_at: '2026-01-16T11:20:00Z',
-  },
-];
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 const statusLabels: Record<string, string> = {
   draft: 'Draft',
@@ -117,21 +32,155 @@ const statusLabels: Record<string, string> = {
   on_hold: 'On Hold',
 };
 
-export default function OrdersPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+const statusStyles: Record<string, string> = {
+  draft: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+  pending_payment: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  scheduled: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  en_route: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  started: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  uploading: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+  editing: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+  qc_pending: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  qc_failed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  qc_passed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  delivered: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  on_hold: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+};
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.property.address.toLowerCase().includes(searchQuery.toLowerCase());
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+}
 
-    const matchesStatus = !statusFilter || order.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+function formatDate(date: string): string {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
+}
 
+async function OrdersList() {
+  const supabase = await createServerSupabaseClient();
+  
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select(`
+      id,
+      order_number,
+      status,
+      total,
+      preferred_date,
+      created_at,
+      customer:customers(id, first_name, last_name, email),
+      property:properties(id, formatted_address, city, state)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('Error fetching orders:', error);
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <p className="text-destructive">Error loading orders</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!orders || orders.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <FileText className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <h3 className="font-semibold">No orders yet</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Create your first order to get started
+          </p>
+          <Button className="mt-4">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Order
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {orders.map((order) => {
+        const customer = order.customer as { id: string; first_name: string; last_name: string; email: string } | null;
+        const property = order.property as { id: string; formatted_address: string; city: string; state: string } | null;
+        
+        return (
+          <Card key={order.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                {/* Order Info */}
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary font-semibold">
+                    {order.order_number?.slice(-3) || '---'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold">{order.order_number}</span>
+                      <Badge className={statusStyles[order.status] || statusStyles.draft}>
+                        {statusLabels[order.status] || order.status}
+                      </Badge>
+                    </div>
+                    {customer && (
+                      <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                        <User className="w-3 h-3" />
+                        <span>{customer.first_name} {customer.last_name}</span>
+                      </div>
+                    )}
+                    {property && (
+                      <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="w-3 h-3" />
+                        <span className="truncate">{property.formatted_address}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Date & Total */}
+                <div className="flex items-center gap-4">
+                  <div className="text-sm">
+                    {order.preferred_date && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="w-3 h-3" />
+                        <span>{formatDate(order.preferred_date)}</span>
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Created {formatDate(order.created_at)}
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-lg font-semibold">
+                      {formatCurrency(order.total || 0)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function OrdersPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -152,164 +201,10 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex-1">
-              <Input
-                placeholder="Search orders, customers, addresses..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Filter className="w-4 h-4 mr-2" />
-                    {statusFilter ? statusLabels[statusFilter] : 'All Status'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setStatusFilter(null)}>
-                    All Status
-                  </DropdownMenuItem>
-                  {Object.entries(statusLabels).map(([key, label]) => (
-                    <DropdownMenuItem key={key} onClick={() => setStatusFilter(key)}>
-                      {label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Orders List */}
-      <div className="space-y-4">
-        {filteredOrders.map((order) => (
-          <Card key={order.id} className="card-hover">
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                {/* Order Info */}
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary font-semibold">
-                    {order.order_number.slice(-3)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link
-                        href={`/dashboard/orders/${order.id}`}
-                        className="font-semibold hover:text-primary transition-colors"
-                      >
-                        {order.order_number}
-                      </Link>
-                      <Badge className={cn('status-badge', getOrderStatusColor(order.status))}>
-                        {statusLabels[order.status]}
-                      </Badge>
-                    </div>
-                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                      <User className="w-3 h-3" />
-                      <span>{order.customer.name}</span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="w-3 h-3" />
-                      <span className="truncate">{order.property.address}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Schedule & Products */}
-                <div className="flex flex-col sm:flex-row gap-4 lg:gap-8">
-                  <div className="text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="w-3 h-3" />
-                      <span>{formatDate(order.preferred_date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1 text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span>{order.preferred_time}</span>
-                    </div>
-                    {order.photographer && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="font-medium">{order.photographer.name}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-sm">
-                    <div className="flex flex-wrap gap-1">
-                      {order.products.slice(0, 2).map((product) => (
-                        <Badge key={product} variant="secondary" className="text-xs">
-                          {product}
-                        </Badge>
-                      ))}
-                      {order.products.length > 2 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{order.products.length - 2} more
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">{formatCurrency(order.total)}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatDate(order.created_at, 'MMM d')}
-                      </div>
-                    </div>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-sm">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/orders/${order.id}`}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit Order
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Cancel Order
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredOrders.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Search className="w-6 h-6 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold">No orders found</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Try adjusting your search or filter criteria
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      <Suspense fallback={<div className="h-96 animate-pulse bg-muted rounded-lg" />}>
+        <OrdersList />
+      </Suspense>
     </div>
   );
 }
