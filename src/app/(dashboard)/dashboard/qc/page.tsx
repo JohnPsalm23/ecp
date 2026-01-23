@@ -61,11 +61,12 @@ async function QCStats() {
     .eq('status', 'pending');
 
   // Calculate average score
-  const { data: scores } = await supabase
+  const { data: scoresData } = await supabase
     .from('qc_jobs')
     .select('overall_score')
     .not('overall_score', 'is', null);
 
+  const scores = scoresData as Array<{ overall_score: number | null }> | null;
   const avgScore = scores && scores.length > 0
     ? Math.round(scores.reduce((sum, s) => sum + (s.overall_score || 0), 0) / scores.length)
     : 0;
