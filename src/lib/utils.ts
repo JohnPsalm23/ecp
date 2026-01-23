@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone, utcToZonedTime } from 'date-fns-tz';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
