@@ -75,15 +75,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single();
 
-    if (error) {
+    if (error || !data) {
       console.error('Error fetching profile:', error);
       return null;
     }
 
+    // Type guard - data is now confirmed to be an object
+    const userData = data as {
+      id: string;
+      email: string;
+      first_name: string;
+      last_name: string;
+      display_name: string;
+      avatar_url: string | null;
+      company_id: string | null;
+      timezone: string | null;
+      user_roles: Array<{ role: string; company_id: string | null; market_id: string | null }> | null;
+    };
+
     return {
-      ...data,
-      roles: data.user_roles || [],
-    } as UserProfile;
+      id: userData.id,
+      email: userData.email,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      display_name: userData.display_name,
+      avatar_url: userData.avatar_url,
+      company_id: userData.company_id,
+      timezone: userData.timezone,
+      roles: userData.user_roles || [],
+    };
   }, [supabase]);
 
   const refreshProfile = useCallback(async () => {
