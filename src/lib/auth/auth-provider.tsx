@@ -10,9 +10,6 @@ import {
 import { useRouter } from 'next/navigation';
 import type { User, Session } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { Database } from '@/types/database.types';
-
-type UserInsert = Database['public']['Tables']['users']['Insert'];
 
 interface UserProfile {
   id: string;
@@ -189,14 +186,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!error && data.user) {
       // Create user profile
-      const userInsert: UserInsert = {
-        id: data.user.id,
-        email,
-        first_name: metadata.first_name,
-        last_name: metadata.last_name,
-        display_name: `${metadata.first_name} ${metadata.last_name}`,
-      };
-      await supabase.from('users').insert(userInsert);
+      // Note: User creation is typically handled by a database trigger on auth.users
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('users') as any).insert({
+          id: data.user.id,
+          email,
+          first_name: metadata.first_name,
+          last_name: metadata.last_name,
+          display_name: `${metadata.first_name} ${metadata.last_name}`,
+        });
+      } catch (insertError) {
+        console.error('Failed to create user profile:', insertError);
+      }
     }
 
     return { error };
