@@ -133,7 +133,9 @@ export async function updateWithOptimisticLock<T extends { updated_at: string }>
   updates: Partial<T>,
   expectedVersion: string
 ): Promise<T> {
-  const { data, error } = await client
+  // Use any to avoid excessive type instantiation with dynamic table names
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (client as any)
     .from(table)
     .update(updates)
     .eq('id', id)
@@ -172,7 +174,8 @@ export async function batchUpsert<T>(
     const batch = records.slice(i, i + batchSize);
     
     try {
-      const { data, error } = await client
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (client as any)
         .from(table)
         .upsert(batch, {
           onConflict: conflictColumns.join(','),
@@ -205,10 +208,13 @@ export async function safeDelete(
     cascadeChecks?: Array<{ table: string; column: string }>;
   } = {}
 ): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = client as any;
+
   // Check for dependent records
   if (options.cascadeChecks) {
     for (const check of options.cascadeChecks) {
-      const { count } = await client
+      const { count } = await db
         .from(check.table)
         .select('id', { count: 'exact', head: true })
         .eq(check.column, id);
@@ -223,7 +229,7 @@ export async function safeDelete(
   }
 
   if (options.softDelete) {
-    const { error } = await client
+    const { error } = await db
       .from(table)
       .update({
         deleted_at: new Date().toISOString(),
@@ -233,7 +239,7 @@ export async function safeDelete(
 
     if (error) throw new AppError(ErrorCode.DATABASE_ERROR, error.message);
   } else {
-    const { error } = await client
+    const { error } = await db
       .from(table)
       .delete()
       .eq('id', id);
