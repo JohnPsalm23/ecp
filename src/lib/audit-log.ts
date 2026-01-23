@@ -74,11 +74,6 @@ export enum AuditAction {
   PERMISSION_CHANGED = 'admin.permission_changed',
   EXPORT_REQUESTED = 'admin.export_requested',
   
-  // API
-  API_KEY_CREATED = 'api.key_created',
-  API_KEY_REVOKED = 'api.key_revoked',
-  WEBHOOK_CREATED = 'api.webhook_created',
-  WEBHOOK_DELETED = 'api.webhook_deleted',
 }
 
 export interface AuditLogEntry {
@@ -257,18 +252,6 @@ export const auditLog = {
       resource_id: settingType,
       company_id: companyId,
       changes: { before, after },
-    }),
-
-  // API
-  apiKeyCreated: (keyId: string, userId: string, companyId: string, keyName: string) =>
-    audit({
-      action: AuditAction.API_KEY_CREATED,
-      actor_id: userId,
-      actor_type: 'user',
-      resource_type: 'api_key',
-      resource_id: keyId,
-      company_id: companyId,
-      metadata: { name: keyName },
     }),
 };
 
