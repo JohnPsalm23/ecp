@@ -132,10 +132,22 @@ async function QCStats() {
   );
 }
 
+interface QCJobWithRelations {
+  id: string;
+  status: string;
+  overall_score: number | null;
+  total_assets: number | null;
+  passed_count: number | null;
+  warning_count: number | null;
+  failed_count: number | null;
+  created_at: string;
+  order: { order_number: string; property: { formatted_address: string } | null } | null;
+}
+
 async function QCJobsList() {
   const supabase = await createServerSupabaseClient();
   
-  const { data: qcJobs, error } = await supabase
+  const { data, error } = await supabase
     .from('qc_jobs')
     .select(`
       id,
@@ -150,6 +162,8 @@ async function QCJobsList() {
     `)
     .order('created_at', { ascending: false })
     .limit(20);
+
+  const qcJobs = data as QCJobWithRelations[] | null;
 
   if (error) {
     console.error('Error fetching QC jobs:', error);

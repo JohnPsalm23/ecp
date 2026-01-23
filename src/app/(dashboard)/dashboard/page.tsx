@@ -60,11 +60,20 @@ function MetricCard({
   );
 }
 
+interface RecentOrder {
+  id: string;
+  order_number: string;
+  status: string;
+  created_at: string;
+  customer: { first_name: string; last_name: string } | null;
+  property: { formatted_address: string } | null;
+}
+
 // Recent Orders Component
 async function RecentOrders() {
   const supabase = await createServerSupabaseClient();
   
-  const { data: orders } = await supabase
+  const { data } = await supabase
     .from('orders')
     .select(`
       id,
@@ -76,6 +85,8 @@ async function RecentOrders() {
     `)
     .order('created_at', { ascending: false })
     .limit(5);
+
+  const orders = data as RecentOrder[] | null;
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {

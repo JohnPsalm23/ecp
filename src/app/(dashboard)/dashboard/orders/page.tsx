@@ -65,10 +65,21 @@ function formatDate(date: string): string {
   });
 }
 
+interface OrderWithRelations {
+  id: string;
+  order_number: string;
+  status: string;
+  total: number | null;
+  preferred_date: string | null;
+  created_at: string;
+  customer: { id: string; first_name: string; last_name: string; email: string } | null;
+  property: { id: string; formatted_address: string; city: string; state: string } | null;
+}
+
 async function OrdersList() {
   const supabase = await createServerSupabaseClient();
   
-  const { data: orders, error } = await supabase
+  const { data, error } = await supabase
     .from('orders')
     .select(`
       id,
@@ -82,6 +93,8 @@ async function OrdersList() {
     `)
     .order('created_at', { ascending: false })
     .limit(50);
+
+  const orders = data as OrderWithRelations[] | null;
 
   if (error) {
     console.error('Error fetching orders:', error);
@@ -117,8 +130,7 @@ async function OrdersList() {
   return (
     <div className="space-y-4">
       {orders.map((order) => {
-        const customer = order.customer as { id: string; first_name: string; last_name: string; email: string } | null;
-        const property = order.property as { id: string; formatted_address: string; city: string; state: string } | null;
+        const { customer, property } = order;
         
         return (
           <Card key={order.id} className="hover:shadow-md transition-shadow">
